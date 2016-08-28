@@ -28,14 +28,14 @@ sim = function(N,P)
 }
 
 # testing
-N = 1000
+N = 2000
 P = 500
 X = sim(N,P)$X
 y = sim(N,P)$y
 beta = sim(N,P)$beta
 
-res1 = microbenchmark(test1=invmethod(X,y,diag(N)))
-res2 = microbenchmark(test2=invmethod(X,y,diag(N)))
+res1 = microbenchmark(test1=invmethod(X,y,diag(N)),times=10)
+res2 = microbenchmark(test2=cholmethod(X,y,diag(N)),times=10)
 print(res1)
 print(res2)
 
