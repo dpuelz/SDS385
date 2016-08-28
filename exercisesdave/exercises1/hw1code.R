@@ -1,4 +1,6 @@
 ## EXERCISES 1 ##
+library(microbenchmark)
+library(ggplot2)
 
 # functions
 invmethod = function(X,y,W)
@@ -26,13 +28,17 @@ sim = function(N,P)
 }
 
 # testing
-N = 2000
-P = 5
+N = 1000
+P = 500
 X = sim(N,P)$X
 y = sim(N,P)$y
 beta = sim(N,P)$beta
 
-test1=invmethod(X,y,diag(N))
+res1 = microbenchmark(test1=invmethod(X,y,diag(N)))
+res2 = microbenchmark(test2=invmethod(X,y,diag(N)))
+print(res1)
+print(res2)
+
 test2=cholmethod(X,y,diag(N))
 
 MSE1 = sqrt(sum((test1-beta)^2))
