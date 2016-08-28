@@ -58,7 +58,7 @@ P = 200
 
 X = simsparse(N,P)$X
 y = simsparse(N,P)$y
-beta = sim(N,P)$beta
+beta = simsparse(N,P)$beta
 
 res1 = microbenchmark(test1=invmethod(X,y,diag(N)),times=50)
 res2 = microbenchmark(test2=cholmethod(X,y,diag(N)),times=50)
