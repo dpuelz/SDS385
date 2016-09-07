@@ -3,6 +3,10 @@ library(microbenchmark)
 library(ggplot2)
 library(Matrix)
 
+#####################
+# LINEAR REGRESSION #
+#####################
+
 # functions
 invmethod = function(X,y,W)
 {
@@ -70,9 +74,31 @@ print(res3)
 
 test2=cholmethod(X,y,diag(N))
 
-MSE1 = sqrt(sum((test1-beta)^2))
-MSE2 = sqrt(sum((test2-beta)^2))
 
-MSE1
-MSE2
+#####################
+#       GLM         #
+#####################
+
+wts = function(B,X)
+{
+	1 / (1 + exp(-X %*% B))
+}
+
+loglike = function(y,w,m)
+{
+	sum(dbinom(y,m,w+1e-6,log=TRUE))
+}
+
+grad = function(y,X,w,m)
+{
+	t(X) %*% (y - t(m) %*% w)	
+}
+
+steepdescent = function(y,X,B0,tol)
+
+
+
+
+
+
 
