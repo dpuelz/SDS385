@@ -45,8 +45,16 @@ X = as.matrix(data[,2:11])
 X = scale(X)
 X = cbind(rep(1,length(ya)),X)
 
+# glm test
+fit = glm(y~X-1)
+Bglm = fit$coefficients
 
+# steepest descent
+B0 = rep(1,11)
+fit2 = steepdescent(y,X,B0,m=1,tol=1e-3,iter=10000,alpha=1e-3)
 
+plot(fit2$loglik,type='l',log='xy')
+plot(fit2$dist,type='l')
 
 
 

@@ -54,26 +54,38 @@ wts = function(B,X)
 
 loglike = function(y,w,m)
 {
-  sum(dbinom(y,m,w+1e-6,log=TRUE))
+  return( - sum( y*log(w+1e-6) + (m-y)*log(1-w+1e-6) ))
 }
 
 grad = function(y,X,w,m)
 {
-  t(X) %*% (y - t(m) %*% w)	
+  - t(X) %*% (y - t(m) %*% w)	
 }
 
-steepdescent = function(y,X,B0,tol,iter)
+dist = function(B)
+{
+  sqrt(sum(B^2))
+}
+
+steepdescent = function(y,X,B0,m=1,tol,iter,alpha)
 {
   p = dim(X)[2]
   N = dim(X)[1]
   Bmat = matrix(0,iter,p)
   Bmat[1,] = B0
+  loglik = rep(0,iter)
+  distance = rep(0,iter)
+  mvec = rep(m,N)
   
-  
-  for(ii in 1:iter)
+  for(ii in 2:iter)
   {
-    
+    w = wts(Bmat[ii-1,],X)
+    Bmat[ii,] = Bmat[ii-1,] - alpha*grad(y,X,w,mvec)
+    distance[ii] = dist(Bmat[ii,]-Bmat[ii-1,])
+    if(distance[ii] <= tol){ break }
+    loglik[ii] = loglike(y,w,m)
   }
+  return(list(Bmat=Bmat,loglik=loglik,dist=distance))
 }
   
   
