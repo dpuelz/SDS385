@@ -54,12 +54,12 @@ wts = function(B,X)
 
 loglike = function(y,w,m)
 {
-  return( - sum( y*log(w+1e-6) + (m-y)*log(1-w+1e-6) ))
+  -sum( y*log(w+1e-6) + (m-y)*log(1-w+1e-6) )
 }
 
 grad = function(y,X,w,m)
 {
-  - t(X) %*% (y - t(m) %*% w)	
+  -t(X) %*% (y - m*w)	
 }
 
 dist = function(B)

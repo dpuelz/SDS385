@@ -50,8 +50,13 @@ fit = glm(y~X-1)
 Bglm = fit$coefficients
 
 # steepest descent
-B0 = rep(1,11)
-fit2 = steepdescent(y,X,B0,m=1,tol=1e-3,iter=10000,alpha=1e-3)
+B0 = rnorm(11)
+fit2 = steepdescent(y,X,B0,m=1,tol=1e-5,iter=20000,alpha=1e-3)
+tail(fit2$Bmat)
+
+# compare
+cat(signif(fit2$Bmat[20000,],digits=4))
+cat(signif(Bglm,digits=4))
 
 plot(fit2$loglik,type='l',log='xy')
 plot(fit2$dist,type='l')
