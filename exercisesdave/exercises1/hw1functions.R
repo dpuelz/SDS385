@@ -91,7 +91,6 @@ dist = function(B)
   sqrt(sum(B^2))
 }
 
-# currently not working ...
 newton = function(y,X,B0,m=1,tol,iter,alpha)
 {
   p = dim(X)[2]
@@ -106,8 +105,8 @@ newton = function(y,X,B0,m=1,tol,iter,alpha)
   {
     w = as.numeric(wts(Bmat[ii-1,],X))
     Hess = hessian(X,mvec,w)
-    Grad = grad(y,X,w,mvec)
-    delB = QRmethod(Hess,Grad)
+    Grad = -grad(y,X,w,mvec)
+    delB = cholmethodgen(Hess,Grad)
     Bmat[ii,] = Bmat[ii-1,] + delB
     distance[ii] = dist(Bmat[ii,]-Bmat[ii-1,])
     if(distance[ii] <= tol){ break }
