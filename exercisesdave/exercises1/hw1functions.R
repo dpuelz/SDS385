@@ -86,9 +86,10 @@ dist = function(B)
   sqrt(sum(B^2))
 }
 
-
+# newton's method optimization implementation 
 newton = function(y,X,B0,m=1,tol,iter,alpha)
 {
+  # defining relevant variables and Bmat
   p = dim(X)[2]
   N = dim(X)[1]
   Bmat = matrix(0,iter,p)
@@ -97,13 +98,22 @@ newton = function(y,X,B0,m=1,tol,iter,alpha)
   loglik = rep(0,iter)
   distance = rep(0,iter)
   
+  # iteration loop
   for(ii in 2:iter)
   {
     w = as.numeric(wts(Bmat[ii-1,],X))
+    
+    # calculate hessian
     Hess = hessian(X,mvec,w)
+    
+    # calculation gradient
     Grad = -grad(y,X,w,mvec)
+    
+    # solve linear system for "beta step"
     delB = cholmethodgen(Hess,Grad)
     Bmat[ii,] = Bmat[ii-1,] + delB
+    
+    # calculate the step size for convergence, etc.
     distance[ii] = dist(Bmat[ii,]-Bmat[ii-1,])
     if(distance[ii] <= tol){ break }
     loglik[ii] = loglike(y,w,m)
@@ -111,6 +121,7 @@ newton = function(y,X,B0,m=1,tol,iter,alpha)
   return(list(Bmat=Bmat,loglik=loglik,dist=distance))
 }
 
+# equivalent newton's method implementation using iterative least squares re-weighting
 newtonapprox = function(y,X,B0,m=1,tol,iter,alpha)
 {
   p = dim(X)[2]
@@ -124,8 +135,14 @@ newtonapprox = function(y,X,B0,m=1,tol,iter,alpha)
   {
     w = as.numeric(wts(Bmat[ii-1,],X))
     Wtil = diag((w+1e-6)*(1-w+1e-6))
+    
+    # "residuals"
     S = y - m*w
+    
+    # working weights
     A = M %*% Wtil
+    
+    # working responses
     z = X %*% Bmat[ii-1,] + diag(1/diag(A)) %*% S
     Bmat[ii,] = cholmethod(X,z,A)
     
@@ -133,6 +150,7 @@ newtonapprox = function(y,X,B0,m=1,tol,iter,alpha)
   return(list(Bmat=Bmat))
 }
 
+# steepest (gradient) descent implementation
 steepdescent = function(y,X,B0,m=1,tol,iter,alpha)
 {
   p = dim(X)[2]
