@@ -61,6 +61,11 @@ cat(round(Bglm,digits=4))
 plot(fit2$loglik,type='l',log='xy')
 plot(fit2$dist,type='l',log='xy')
 
+# newton's method
+source('hw1functions.R')
+B0 = rnorm(11)
+fit3 = newton(y,X,B0,m=1,tol=1e-2,iter=500,alpha=1)
 
+cat(fit3$Bmat[500,])
 
 

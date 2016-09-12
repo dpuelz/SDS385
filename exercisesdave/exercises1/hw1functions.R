@@ -16,6 +16,14 @@ cholmethod = function(X,y,W)
   return(b)
 }
 
+cholmethodgen = function(C,d)
+{
+  L = chol(C)
+  z = forwardsolve(L,d)
+  b = backsolve(t(L),z)
+  return(b)
+}
+
 sparsecholmethod = function(X,y,W)
 {
   C = t(X)%*%W%*%X
@@ -64,20 +72,57 @@ grad = function(y,X,w,m)
 
 hessian = function(X,m,w)
 {
-  t(X) %*% diag(m) %*% diag(w*(1-w)) %*% X
+  t(X) %*% diag(m*(w+1e-6)*(1-w+1e-6)) %*% X
 }
 dist = function(B)
 {
   sqrt(sum(B^2))
 }
 
+# currently not working ...
 newton = function(y,X,B0,m=1,tol,iter,alpha)
 {
-  mvec = rep(m,dim(X)[1])
-  wvec = wts(B0,X)
-  Hess = hessian(X,mvec,wvec)
-  Grad = grad(grad(y,X,w,mvec))
+  p = dim(X)[2]
+  N = dim(X)[1]
+  Bmat = matrix(0,iter,p)
+  Bmat[1,] = B0
+  mvec = rep(m,N)
+  loglik = rep(0,iter)
+  distance = rep(0,iter)
   
+  for(ii in 2:iter)
+  {
+    w = as.numeric(wts(Bmat[ii-1,],X))
+    Hess = hessian(X,mvec,w)
+    Grad = grad(y,X,w,mvec)
+    delB = cholmethodgen(Hess,Grad)  
+    Bmat[ii,] = Bmat[ii-1,] - delB
+    distance[ii] = dist(Bmat[ii,]-Bmat[ii-1,])
+    if(distance[ii] <= tol){ break }
+    loglik[ii] = loglike(y,w,m)
+  }
+  return(list(Bmat=Bmat,loglik=loglik,dist=distance))
+}
+
+newtonapprox = function(y,X,B0,m=1,tol,iter,alpha)
+{
+  p = dim(X)[2]
+  N = dim(X)[1]
+  Bmat = matrix(0,iter,p)
+  Bmat[1,] = B0
+  M = diag(rep(m,N))
+  distance = rep(0,iter)
+  
+  for(ii in 2:iter)
+  {
+    w = as.numeric(wts(Bmat[ii-1,],X))
+    Wtil = diag(w*1(1-w))
+    S = y - m*w
+    A = M %*% Wtil
+    z = X %*% Bmat[ii-1] + solve(A) %*% S
+    
+    
+  }
 }
 
 steepdescent = function(y,X,B0,m=1,tol,iter,alpha)
