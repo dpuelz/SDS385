@@ -63,9 +63,13 @@ plot(fit2$dist,type='l',log='xy')
 
 # newton's method
 source('hw1functions.R')
-B0 = rnorm(11)
-fit3 = newton(y,X,B0,m=1,tol=1e-2,iter=500,alpha=1)
+B0 = rep(0,11)
+fit3 = newton(y,X,B0,m=1,tol=1e-2,iter=50,alpha=1)
+cat(fit3$Bmat[50,])
+cat(round(Bglm,digits=4))
 
-cat(fit3$Bmat[500,])
-
-
+source('hw1functions.R')
+B0 = rep(0,11)
+fit4 = newtonapprox(y,X,B0,m=1,tol=1e-2,iter=10,alpha=1)
+cat(fit4$Bmat[10,])
+cat(round(Bglm,digits=4))

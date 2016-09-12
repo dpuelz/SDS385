@@ -6,21 +6,33 @@ invmethod = function(X,y,W)
   return(solve(t(X)%*%W%*%X)%*%t(X)%*%W%*%y)
 }
 
+# check this function .. may need 
 cholmethod = function(X,y,W)
 {
   C = t(X)%*%W%*%X
   d = t(X)%*%W%*%y
   L = chol(C)
-  z = forwardsolve(L,d)
-  b = backsolve(t(L),z)
+  z = solve(t(L)) %*% d
+  b = solve(L) %*% z
   return(b)
+}
+
+QRmethod <- function(A,b)
+{
+  
+  QR <- qr(A)
+  Q <- qr.Q(QR)
+  R <- qr.R(QR)
+  
+  x <- qr.solve(A,b)
+  return(x)
 }
 
 cholmethodgen = function(C,d)
 {
   L = chol(C)
-  z = forwardsolve(L,d)
-  b = backsolve(t(L),z)
+  z = solve(t(L)) %*% d
+  b = solve(L) %*% z
   return(b)
 }
 
@@ -95,8 +107,8 @@ newton = function(y,X,B0,m=1,tol,iter,alpha)
     w = as.numeric(wts(Bmat[ii-1,],X))
     Hess = hessian(X,mvec,w)
     Grad = grad(y,X,w,mvec)
-    delB = cholmethodgen(Hess,Grad)  
-    Bmat[ii,] = Bmat[ii-1,] - delB
+    delB = QRmethod(Hess,Grad)
+    Bmat[ii,] = Bmat[ii-1,] + delB
     distance[ii] = dist(Bmat[ii,]-Bmat[ii-1,])
     if(distance[ii] <= tol){ break }
     loglik[ii] = loglike(y,w,m)
@@ -116,13 +128,14 @@ newtonapprox = function(y,X,B0,m=1,tol,iter,alpha)
   for(ii in 2:iter)
   {
     w = as.numeric(wts(Bmat[ii-1,],X))
-    Wtil = diag(w*1(1-w))
+    Wtil = diag((w+1e-6)*(1-w+1e-6))
     S = y - m*w
     A = M %*% Wtil
-    z = X %*% Bmat[ii-1] + solve(A) %*% S
-    
+    z = X %*% Bmat[ii-1,] + diag(1/diag(A)) %*% S
+    Bmat[ii,] = cholmethod(X,z,A)
     
   }
+  return(list(Bmat=Bmat))
 }
 
 steepdescent = function(y,X,B0,m=1,tol,iter,alpha)
