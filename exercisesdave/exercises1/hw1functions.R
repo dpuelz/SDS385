@@ -6,7 +6,7 @@ invmethod = function(X,y,W)
   return(solve(t(X)%*%W%*%X)%*%t(X)%*%W%*%y)
 }
 
-# check this function .. may need 
+# solving weighted least squares via cholesky decomposition
 cholmethod = function(X,y,W)
 {
   C = t(X)%*%W%*%X
@@ -17,17 +17,7 @@ cholmethod = function(X,y,W)
   return(b)
 }
 
-QRmethod <- function(A,b)
-{
-  
-  QR <- qr(A)
-  Q <- qr.Q(QR)
-  R <- qr.R(QR)
-  
-  x <- qr.solve(A,b)
-  return(x)
-}
-
+# solving general linear system ( Cx = d ) via cholesky decomposition
 cholmethodgen = function(C,d)
 {
   L = chol(C)
@@ -36,6 +26,7 @@ cholmethodgen = function(C,d)
   return(b)
 }
 
+# solving weighted least squares via sparse cholesky decomposition
 sparsecholmethod = function(X,y,W)
 {
   C = t(X)%*%W%*%X
@@ -56,6 +47,7 @@ sim = function(N,P)
   return(list(y=y,X=X,beta=beta))
 }
 
+# simulating some sparse silly data
 simsparse = function(N,P)
 {
   set.seed(1)
@@ -67,6 +59,7 @@ simsparse = function(N,P)
   return(list(y=y,X=X,beta=beta))
 }
 
+# weight function for logistic model
 wts = function(B,X)
 {
   1 / (1 + exp(-X %*% B))
@@ -77,11 +70,13 @@ loglike = function(y,w,m)
   -sum( y*log(w+1e-6) + (m-y)*log(1-w+1e-6) )
 }
 
+# gradient function for logistic likelihood
 grad = function(y,X,w,m)
 {
   -t(X) %*% (y - m*w)	
 }
 
+# hessian function for logistic likelihood
 hessian = function(X,m,w)
 {
   t(X) %*% diag(m*(w+1e-6)*(1-w+1e-6)) %*% X
@@ -90,6 +85,7 @@ dist = function(B)
 {
   sqrt(sum(B^2))
 }
+
 
 newton = function(y,X,B0,m=1,tol,iter,alpha)
 {
