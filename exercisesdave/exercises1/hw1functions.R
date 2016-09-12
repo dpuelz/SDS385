@@ -41,8 +41,8 @@ sparsecholmethod = function(X,y,W)
   C = t(X)%*%W%*%X
   d = t(X)%*%W%*%y
   L = Cholesky(C,LDL=FALSE)
-  z = forwardsolve(L,d)
-  b = backsolve(t(L),z)
+  z = solve(t(L)) %*% d
+  b = solve(L) %*% z
   return(b)
 }
 
