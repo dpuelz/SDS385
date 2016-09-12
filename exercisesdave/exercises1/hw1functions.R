@@ -62,9 +62,22 @@ grad = function(y,X,w,m)
   -t(X) %*% (y - m*w)	
 }
 
+hessian = function(X,m,w)
+{
+  t(X) %*% diag(m) %*% diag(w*(1-w)) %*% X
+}
 dist = function(B)
 {
   sqrt(sum(B^2))
+}
+
+newton = function(y,X,B0,m=1,tol,iter,alpha)
+{
+  mvec = rep(m,dim(X)[1])
+  wvec = wts(B0,X)
+  Hess = hessian(X,mvec,wvec)
+  Grad = grad(grad(y,X,w,mvec))
+  
 }
 
 steepdescent = function(y,X,B0,m=1,tol,iter,alpha)
