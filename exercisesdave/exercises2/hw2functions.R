@@ -43,7 +43,7 @@ sim = function(N,P)
   set.seed(1)
   beta = rep(1,P)
   X = matrix(rnorm(N*P), nrow=N)
-  y = X%*%beta + rnorm(N,sd=0.05)
+  y = X%*%beta + rnorm(N,sd=0.5)
   return(list(y=y,X=X,beta=beta))
 }
 
@@ -172,24 +172,38 @@ steepdescent = function(y,X,B0,m=1,tol,iter,alpha)
   return(list(Bmat=Bmat,loglik=loglik,dist=distance))
 }
 
-# stochastic gradient descent
-stochgraddescent = function(y,X,B0,m=1,tol,iter,alpha)
+# normal loglikelihood with known sigma of 0.25
+logliknorm = function(y,X,B)
 {
-  p = dim(X)[2]
-  N = dim(X)[1]
+  -sum(dnorm(y,X*B,sd=0.5,log=TRUE))
+}
+
+gradnorm = function(y,X,B)
+{
+  -sum((y-X*B)*X)
+}
+
+# stochastic gradient descent
+stochgraddescent.test = function(y,X,B0,m=1,tol,iter,alpha,replace)
+{
+  # p = dim(X)[2]
+  # N = dim(X)[1]
+  p = 1
+  N = 500
   Bmat = matrix(0,iter,p)
   Bmat[1,] = B0
   loglik = rep(0,iter)
   distance = rep(0,iter)
-  mvec = rep(m,N)
   
   for(ii in 2:iter)
   {
-    w = wts(Bmat[ii-1,],X)
-    Bmat[ii,] = Bmat[ii-1,] - alpha*grad(y,X,w,mvec)
+    ind = sample(1:N,1)
+    ysam = y[ind]
+    Xsam = X[ind]
+    Bmat[ii,] = Bmat[ii-1,] - alpha*gradnorm(ysam,Xsam,Bmat[ii-1,])
     distance[ii] = dist(Bmat[ii,]-Bmat[ii-1,])
-    if(distance[ii] <= tol){ break }
-    loglik[ii] = loglike(y,w,m)
+    # if(distance[ii] <= tol){ break }
+    loglik[ii] = logliknorm(y,X,Bmat[ii,])
   }
   return(list(Bmat=Bmat,loglik=loglik,dist=distance))
 }

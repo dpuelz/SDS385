@@ -5,7 +5,7 @@ library(Matrix)
 source('hw2functions.R')
 
 #####################
-# LINEAR REGRESSION #
+#  Simulated Data   #
 #####################
 
 # testing
@@ -13,24 +13,23 @@ N = 500
 P = 1
 
 # extracting simulating data from function
-X = simsparse(N,P)$X
-y = simsparse(N,P)$y
-beta = simsparse(N,P)$beta
+X = sim(N,P)$X
+y = sim(N,P)$y
+beta = sim(N,P)$beta
 
-# benchmarking invesion method
-res1 = microbenchmark(test1=invmethod(X,y,diag(N)),times=50)
+# fitting via GLM and SGD
+fit = glm(y~X,family='gaussian')
+Bglm = fit$coefficients
 
-# benchmarking cholesky method
-res2 = microbenchmark(test2=cholmethod(X,y,diag(N)),times=50)
-X = Matrix(X,sparse=TRUE); W = Matrix(diag(N),sparse=TRUE)
+# stochastic gradient descent on test data (single covariate regression)
+B0 = -5
+fit2 = stochgraddescent.test(y,X,B0,m=1,tol=1e-6,iter=1000,alpha=1e-1,replace=TRUE)
+plot(fit2$Bmat[1:1000,],type='l')
+abline(h=1,lty=2,col=2)
+plot(fit2$loglik[1:1000],type='l')
 
-# benchmarking sparse cholseky method
-res3 = microbenchmark(test2=cholmethod(X,y,diag(N)),times=50)
 
-# printing out some results
-print(res1)
-print(res2)
-print(res3)
+
 
 
 #####################
