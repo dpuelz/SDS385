@@ -24,11 +24,9 @@ Bglm = fit$coefficients
 # stochastic gradient descent on test data (single covariate regression)
 B0 = -5
 fit2 = stochgraddescent.test(y,X,B0,m=1,tol=1e-6,iter=1000,alpha=1e-1,replace=TRUE)
-plot(fit2$Bmat[1:1000,],type='l')
+plot(fit2$Bmat[2:1000,],type='l')
 abline(h=1,lty=2,col=2)
-plot(fit2$loglik[1:1000],type='l')
-
-
+plot(fit2$loglik[2:1000],type='l')
 
 
 
@@ -52,16 +50,31 @@ fit = glm(y~X-1,family='binomial')
 Bglm = fit$coefficients
 
 # steepest descent
-B0 = rnorm(11)
-fit2 = steepdescent(y,X,B0,m=1,tol=1e-6,iter=80000,alpha=1e-2)
-tail(fit2$Bmat)
+B0 = rep(0,11)
+iter=10000
+fit3 = stochgraddescent(y,X,B0,m=1,tol=1e-6,iter,replace=FALSE)
+tail(fit3$Bmat)
 
 # compare glm and steepest descent
-cat(round(fit2$Bmat[20000,],digits=4))
+cat(round(fit3$Bmat[iter,],digits=4))
 cat(round(Bglm,digits=4))
 
-plot(fit2$loglik,type='l',log='xy')
-plot(fit2$dist,type='l',log='xy')
+plot(fit3$loglik[2:iter],type='l',log='xy')
+plot(fit3$dist[2:iter],type='l',log='xy')
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # newton's method
 source('hw1functions.R')
