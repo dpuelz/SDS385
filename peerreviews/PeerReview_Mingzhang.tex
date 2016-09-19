@@ -1,0 +1,222 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Short Sectioned Assignment
+% LaTeX Template
+% Version 1.0 (5/5/12)
+%
+% This template has been downloaded from:
+% http://www.LaTeXTemplates.com
+%
+% Original author:
+% Frits Wenneker (http://www.howtotex.com)
+%
+% License:
+% CC BY-NC-SA 3.0 (http://creativecommons.org/licenses/by-nc-sa/3.0/)
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%----------------------------------------------------------------------------------------
+%	PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
+%----------------------------------------------------------------------------------------
+
+\documentclass[paper=a4, fontsize=11pt]{scrartcl} % A4 paper and 11pt font size
+
+\usepackage[T1]{fontenc} % Use 8-bit encoding that has 256 glyphs
+\usepackage{fourier} % Use the Adobe Utopia font for the document - comment this line to return to the LaTeX default
+\usepackage[english]{babel} % English language/hyphenation
+\usepackage{amsmath,amsfonts,amsthm} % Math packages
+\usepackage{amssymb}
+\newtheorem{theorem}{Claim}
+\usepackage{graphicx}
+\usepackage{lipsum} % Used for inserting dummy 'Lorem ipsum' text into the template
+\usepackage{listings}
+\usepackage{fancyvrb} 
+\usepackage{bm} 
+\usepackage{xcolor} 
+\xdefinecolor{gray}{rgb}{0.4,0.4,0.4} 
+\definecolor{LightCyan}{rgb}{0.88,1,1}
+\xdefinecolor{blue}{RGB}{58,95,205}% R's royalblue3; #3A5FCD
+\usepackage{titlesec}
+\newcommand{\sectionbreak}{\clearpage}
+
+\lstset{% setup listings 
+        language=R,% set programming language 
+        basicstyle=\ttfamily\small,% basic font style 
+        keywordstyle=\color{blue},% keyword style 
+        commentstyle=\color{red},% comment style 
+        numbers=left,% display line numbers on the left side 
+        numberstyle=\scriptsize,% use small line numbers 
+        numbersep=10pt,% space between line numbers and code 
+        tabsize=3,% sizes of tabs 
+        showstringspaces=false,% do not replace spaces in strings by a certain character 
+        captionpos=b,% positioning of the caption below 
+        breaklines=true,% automatic line breaking 
+        escapeinside={(*}{*)},% escaping to LaTeX 
+        fancyvrb=true,% verbatim code is typset by listings 
+        extendedchars=false,% prohibit extended chars (chars of codes 128--255) 
+        literate={"}{{\texttt{"}}}1{<-}{{$\bm\leftarrow$}}1{<<-}{{$\bm\twoheadleftarrow$}}1 
+        {~}{{$\bm\sim$}}1{<=}{{$\bm\le$}}1{>=}{{$\bm\ge$}}1{!=}{{$\bm\neq$}}1{^}{{$^{\bm\wedge}$}}1,% item to replace, text, length of chars 
+        alsoletter={.<-},% becomes a letter 
+        alsoother={$},% becomes other 
+        otherkeywords={!=, ~, $, \&, \%/\%, \%*\%, \%\%, <-, <<-, /},% other keywords 
+        deletekeywords={c}% remove keywords 
+} 
+
+
+\usepackage{sectsty} % Allows customizing section commands
+%\usepackage[left=2cm,right=2cm,top=2cm,bottom=3cm]{geometry}
+\usepackage[margin=1in]{geometry}
+\addtolength{\topmargin}{-.1in}
+\allsectionsfont{\normalfont\scshape} % Make all sections centered, the default font and small caps
+
+\usepackage{fancyhdr} % Custom headers and footers
+\pagestyle{fancyplain} % Makes all pages in the document conform to the custom headers and footers
+\fancyhead{} % No page header - if you want one, create it in the same way as the footers below
+\fancyfoot[L]{} % Empty left footer
+\fancyfoot[C]{} % Empty center footer
+\fancyfoot[R]{\thepage} % Page numbering for right footer
+\renewcommand{\headrulewidth}{0pt} % Remove header underlines
+\renewcommand{\footrulewidth}{0pt} % Remove footer underlines
+\setlength{\headheight}{2pt} % Customize the height of the header
+
+\numberwithin{equation}{section} % Number equations within sections (i.e. 1.1, 1.2, 2.1, 2.2 instead of 1, 2, 3, 4)
+\numberwithin{figure}{section} % Number figures within sections (i.e. 1.1, 1.2, 2.1, 2.2 instead of 1, 2, 3, 4)
+\numberwithin{table}{section} % Number tables within sections (i.e. 1.1, 1.2, 2.1, 2.2 instead of 1, 2, 3, 4)
+
+\setlength\parindent{0pt} % Removes all indentation from paragraphs - comment this line for an assignment with lots of text
+
+%----------------------------------------------------------------------------------------
+%	TITLE SECTION
+%----------------------------------------------------------------------------------------
+
+\newcommand{\horrule}[1]{\rule{\linewidth}{#1}} % Create horizontal rule command with 1 argument of height
+
+\title{	
+\normalfont \normalsize 
+\textsc{University of Texas} \\ [25pt] % Your university, school and/or department name(s)
+\horrule{0.1pt} \\[.5cm] % Thin top horizontal rule
+\huge Peer review: Mingzhang Yin \\ % The assignment title
+\horrule{.1pt} \\[0cm] % Thick bottom horizontal rule
+}
+\vspace{10mm}
+\subtitle{SDS 385}
+
+\author{David Puelz} % Your name
+
+\date{\normalsize\today} % Today's date or a custom date
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+
+%----------------------------------------------------------------------------------------
+%	PROBLEM 1
+%----------------------------------------------------------------------------------------
+
+\section{Comments on code}
+
+In general, your code is very easy to read.  I had a good time looking through it. I have a couple suggestions regarding individual functions -- please see below.
+
+\subsection{Exercise 1 code}
+
+In the sparseX function, it may make sense to pass the truebeta vector as a parameter.  Then, you can compare your solver's results with the true coefficient vector.  I do like your use of crossprod() and the Matrix library!
+
+\begin{lstlisting}
+sparseX=function(N,P,prop=0.05) #generate N*P sparse matrix X return A,B s.t. A*beta=B
+{
+  X=matrix(rnorm(N*P),nrow=N)
+  mask = matrix(rbinom(N*P,1,prop), nrow=N)
+  X = mask*X
+  W=diag(sample(c(1,2),N,replace=T))
+  #generate Y
+  truebeta<-rnorm(P,sd=10)
+  error=rnorm(N)
+  Y=X%*%truebeta+error
+  #generate matrix A and B
+  A=Matrix(crossprod(X,W)%*%X,sparse=T) #use crossprod to accelerate
+  B=Matrix(crossprod(X,W)%*%Y,sparse=F)
+  return(list(A=A,B=B))
+}	
+\end{lstlisting}
+
+\subsection{Exercise 2 code}
+
+For the two functions below, it could make sense to have a separate function that constructs the weights.  This could save potential debugging time and could make the code more modular.
+
+\begin{lstlisting}
+#Calculate gradient for the negative loglikelihood of binomial logistic
+grad=function(X,y,m,beta)
+{
+  w=1/(1+exp(-X%*%beta))
+  delta=m*w-y
+  gradient<-t(X)%*%delta
+  return(gradient)
+}
+
+#Calculate hessian for the negative loglikelihood of binomial logistic
+hess=function(X,y,m,beta)
+{
+  w=1/(1+exp(-X%*%beta))
+  D=diag(as.vector(m*w*(1-w)))  #Here diag should use a vector!
+  return(crossprod(X,D)%*%X)
+}
+\end{lstlisting}
+
+
+Just a general comment on the gradient descent code below... I really like your use of betarecord to dynamically construct the sequence of betas.  This probably helps with speed and upfront memory allocation.  I will use this technique for future code I write! I also appreciate your use of comments here for each of the individual steps.  It makes the code very readable.
+
+\begin{lstlisting}
+#gradient descent to get MLE
+#X is covariates
+#y is observation
+#m is parameter of binomial, 1 here
+#beta0 is initial value
+#return betarecord is beta value along steps, logrecord is -loglik along steps, step is total steps
+#beta is final beta, obj_value is final objective function value
+gradientdescent=function(X,y,m,beta0)
+{
+  maxstep=5000
+  stepsize=10e-4 #some try and error. If set as 0.1, objective function value will oscillate in the end
+  accu_beta=10e-3
+  accu_log=10e-3
+  
+  step=0
+  beta=beta0
+  obj_value=negloglike(X,y,m,beta)
+  diff_beta=1+accu_beta
+  diff_log=1+accu_log
+  
+  betarecord=c()
+  logrecord=c()
+  while(step<maxstep && diff_beta>accu_beta && diff_log>accu_log)
+  {
+    gradient=grad(X,y,m,beta)
+    #new \beta and -log(likelihood)
+    betanew<-beta-stepsize*gradient
+    obj_value_new=negloglike(X,y,m,betanew)
+    
+    #calculate one step change
+    diff_beta=norm(betanew-beta,type="f")
+    diff_log=abs(obj_value_new-obj_value)
+    
+    #record beta and -log(likelihood)
+    betarecord=c(betarecord,betanew)
+    logrecord=c(logrecord,obj_value_new)
+    
+    #update beta and -log(likelihood)
+    beta=betanew
+    obj_value=obj_value_new
+    
+    step=step+1
+  }
+  return(list(betarecord=betarecord,logrecord=logrecord,step=step,beta=beta,obj_value=obj_value))
+}
+\end{lstlisting}
+
+\section{General comments}
+
+I enjoyed looking through your code and running it.  It would be interesting to see plots for the estimate coefficients and their convergence.  Also, additional plots and analysis involving tweaking the step size and using different (simulated?) data sets would be cool to look at. 
+
+
+\end{document}
