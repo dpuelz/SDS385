@@ -196,16 +196,16 @@ stochgraddescent = function(y,X,B0,m=1,tol,iter,replace)
   
   for(ii in 2:iter)
   {
-    # alpha = rm_step(C=40,a=.5,t=ii,t0=2)
-    alpha=1e-2
+    alpha = rm_step(C=40,a=.5,t=ii,t0=2)
+    # alpha=1e-2
     ind = sample(1:N,1)
     ysam = y[ind]
     Xsam = t(as.matrix(X[ind,]))
     msam = mvec[ind]
-    w = wts(Bmat[ii-1,],Xsam)
-    Bmat[ii,] = Bmat[ii-1,] - alpha*grad(ysam,Xsam,w,msam)
+    wsam = wts(Bmat[ii-1,],Xsam)
+    Bmat[ii,] = Bmat[ii-1,] - alpha*grad(ysam,Xsam,wsam,msam)
     distance[ii] = dist(Bmat[ii,]-Bmat[ii-1,])
-    # if(distance[ii] <= tol){ break }
+    w = wts(Bmat[ii-1,],X)
     loglik[ii] = loglike(y,w,m)
   }
   return(list(Bmat=Bmat,loglik=loglik,dist=distance))

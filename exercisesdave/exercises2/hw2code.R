@@ -50,8 +50,9 @@ fit = glm(y~X-1,family='binomial')
 Bglm = fit$coefficients
 
 # steepest descent
-B0 = rep(0,11)
-iter=10000
+set.seed(2)
+B0 = Bglm + rnorm(11)
+iter=100000
 fit3 = stochgraddescent(y,X,B0,m=1,tol=1e-6,iter,replace=FALSE)
 tail(fit3$Bmat)
 
@@ -59,8 +60,10 @@ tail(fit3$Bmat)
 cat(round(fit3$Bmat[iter,],digits=4))
 cat(round(Bglm,digits=4))
 
+matplot(fit3$Bmat[(iter/2):iter,],type='l')
+abline(h=Bglm,col='gray')
 plot(fit3$loglik[2:iter],type='l',log='xy')
-plot(fit3$dist[2:iter],type='l',log='xy')
+plot(fit3$dist[2:iter],type='l')
 
 
 
