@@ -66,29 +66,3 @@ plot(fit3$loglik[2:iter],type='l',log='xy')
 plot(fit3$dist[2:iter],type='l')
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-# newton's method
-source('hw1functions.R')
-B0 = rep(0,11)
-fit3 = newton(y,X,B0,m=1,tol=1e-2,iter=10,alpha=1)
-cat(fit3$Bmat[10,])
-cat(round(Bglm,digits=4))
-
-# newton's method by iteratively re-weighting least squares
-source('hw1functions.R')
-B0 = rep(0,11)
-fit4 = newtonapprox(y,X,B0,m=1,tol=1e-2,iter=10,alpha=1)
-cat(fit4$Bmat[10,])
-cat(round(Bglm,digits=4))
