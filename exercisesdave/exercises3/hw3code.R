@@ -24,14 +24,14 @@ Bglm = fit$coefficients
 B0 = rep(0,p)
 # set.seed(1)
 # B0 = Bglm + 0.5*rnorm(p)
-fit2 = steepdescent(y,X,B0,m=1,tol=1e-6,iter=5000,alpha=1e-2)
+fit2 = steepdescent(y,X,B0,m=1,tol=1e-6,iter=500,alpha=1e-2)
 tail(fit2$Bmat)
 
 # steepest descent with backtracking
 B0 = rep(0,p)
 # set.seed(1)
 # B0 = Bglm + 0.5*rnorm(p)
-fit3 = steepdescent_backtrack(y,X,B0,m=1,tol=1e-6,iter=5000,alpha=1,rho=0.85,c=1e-2)
+fit3 = steepdescent_backtrack(y,X,B0,m=1,tol=1e-6,iter=500,alpha=1,rho=0.85,c=1e-2)
 tail(fit3$Bmat)
 
 # newton method BFGS
@@ -39,7 +39,7 @@ source('hw3functions.R')
 B0 = rep(0,p)
 # set.seed(1)
 # B0 = Bglm + 0.5*rnorm(p)
-fit4 = newton_BFGS_backtrack(y,X,B0,m=1,tol=1e-6,iter=500,alpha=1e-2)
+fit4 = newton_BFGS_backtrack(y,X,B0,m=1,tol=1e-6,iter=500,alpha=1,rho=0.8,c=0.2)
 tail(fit4$Bmat)
 plot(fit4$loglik,type='l',log='xy')
 
