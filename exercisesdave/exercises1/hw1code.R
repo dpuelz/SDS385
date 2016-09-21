@@ -70,6 +70,7 @@ B0 = rep(0,11)
 fit3 = newton(y,X,B0,m=1,tol=1e-2,iter=10,alpha=1)
 cat(fit3$Bmat[10,])
 cat(round(Bglm,digits=4))
+plot(fit3$loglik,type='l',log='xy')
 
 # newton's method by iteratively re-weighting least squares
 source('hw1functions.R')

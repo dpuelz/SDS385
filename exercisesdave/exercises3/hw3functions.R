@@ -287,3 +287,68 @@ backtrack = function(a,rho,c,beta,X,y,m)
   return(a)
 }
 
+
+# BFGS Hessian
+BFGSinvHess = function(betadiff,graddiff,Hessk)
+{
+  sy = betadiff %*% t(graddiff)
+  ys = graddiff %*% t(betadiff)
+  rho = as.numeric(1 / (t(graddiff) %*% betadiff))
+  ss = betadiff %*% t(betadiff)
+  I = diag(rep(1,length(betadiff)))
+  
+  Hesskplus1 = (I-rho*sy) %*% Hessk %*% (I-rho*ys) + rho*ss
+  return(Hesskplus1)
+}
+
+# newton's method optimization implementation 
+newton_BFGS_backtrack = function(y,X,B0,m=1,tol,iter,alpha)
+{
+  # defining relevant variables and Bmat
+  p = dim(X)[2]
+  N = dim(X)[1]
+  mvec = rep(m,N)
+  loglik = rep(0,iter)
+  distance = rep(0,iter)
+  Bmat = matrix(0,iter,p)
+  Bmat[1,] = B0
+  Bmat[2,] = Bmat[1,] - (1e-2)*grad(y,X,wts(Bmat[1,],X),mvec) # gradient descent for second step
+  g2 = grad(y,X,wts(Bmat[2,],X),mvec)
+  g1 = grad(y,X,wts(Bmat[1,],X),mvec)
+  invHess = BFGSinvHess(Bmat[2,]-Bmat[1,],g2-g1,diag(p))
+  
+  # iteration loop
+  for(ii in 3:iter)
+  {
+    # calculating gradient
+    Grad = grad(y,X,wts(Bmat[ii-1,],X),mvec)
+    
+    # solve linear system for "beta step"
+    Bmat[ii,] = Bmat[ii-1,] - alpha * (invHess %*% Grad)
+    
+    # compute new Hessian approximation
+    g2 = grad(y,X,wts(Bmat[ii,],X),mvec)
+    g1 = grad(y,X,wts(Bmat[ii-1,],X),mvec)
+    invHess = BFGSinvHess(Bmat[ii,]-Bmat[ii-1,],g2-g1,invHess)
+    
+    # calculate the step size for convergence, etc.
+    distance[ii] = dist(Bmat[ii,]-Bmat[ii-1,])
+    # if(distance[ii] <= tol){ break }
+    loglik[ii] = loglike(y,wts(Bmat[ii,],X),m)
+  }
+  return(list(Bmat=Bmat,loglik=loglik,dist=distance))
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
