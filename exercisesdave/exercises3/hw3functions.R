@@ -298,6 +298,7 @@ BFGSinvHess = function(betadiff,graddiff,Hessk)
   I = diag(rep(1,length(betadiff)))
   
   Hesskplus1 = (I-rho*sy) %*% Hessk %*% (I-rho*ys) + rho*ss
+  # cat(betadiff,'\n')
   return(Hesskplus1)
 }
 
@@ -316,7 +317,7 @@ newton_BFGS_backtrack = function(y,X,B0,m=1,tol,iter,alpha,rho,c)
   # alphause = backtrack_BFGS(alpha,rho,c,Bmat[1,],X,y,m,invHess)
   # Grad = grad(y,X,wts(Bmat[1,],X),mvec)
   # Bmat[2,] = Bmat[1,] - alphause * (invHess %*% Grad)
-  Bmat[2,] = Bmat[1,] - (1e-2)*grad(y,X,wts(Bmat[1,],X),mvec) # gradient descent for second step
+  Bmat[2,] = Bmat[1,] - (1e-4)*grad(y,X,wts(Bmat[1,],X),mvec) # gradient descent for second step
   g2 = grad(y,X,wts(Bmat[2,],X),mvec)
   g1 = grad(y,X,wts(Bmat[1,],X),mvec)
   invHess = BFGSinvHess(Bmat[2,]-Bmat[1,],g2-g1,diag(p))
@@ -353,6 +354,9 @@ backtrack_BFGS = function(a,rho,c,beta,X,y,m,invHess)
   wnew = wts(beta + a*direct,X)
   left = loglike(y,wnew,m)
   right = loglike(y,wold,m) + c*a*t(grad(y,X,wold,mvec)) %*% direct
+  # cat(invHess,'\n')
+  # cat(left,'\n')
+  # cat(right,'\n')
   while(left > right)
   {
     a = rho*a

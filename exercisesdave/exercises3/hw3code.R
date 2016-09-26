@@ -39,7 +39,7 @@ source('hw3functions.R')
 B0 = rep(0,p)
 # set.seed(1)
 # B0 = Bglm + 0.5*rnorm(p)
-fit4 = newton_BFGS_backtrack(y,X,B0,m=1,tol=1e-6,iter=500,alpha=1,rho=0.8,c=0.35)
+fit4 = newton_BFGS_backtrack(y,X,B0,m=1,tol=1e-6,iter=500,alpha=0.5,rho=0.8,c=0.35)
 tail(fit4$Bmat)
 plot(fit4$loglik,type='l',log='xy')
 
