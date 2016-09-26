@@ -312,6 +312,10 @@ newton_BFGS_backtrack = function(y,X,B0,m=1,tol,iter,alpha,rho,c)
   distance = rep(0,iter)
   Bmat = matrix(0,iter,p)
   Bmat[1,] = B0
+  # invHess = diag(p)
+  # alphause = backtrack_BFGS(alpha,rho,c,Bmat[1,],X,y,m,invHess)
+  # Grad = grad(y,X,wts(Bmat[1,],X),mvec)
+  # Bmat[2,] = Bmat[1,] - alphause * (invHess %*% Grad)
   Bmat[2,] = Bmat[1,] - (1e-2)*grad(y,X,wts(Bmat[1,],X),mvec) # gradient descent for second step
   g2 = grad(y,X,wts(Bmat[2,],X),mvec)
   g1 = grad(y,X,wts(Bmat[1,],X),mvec)

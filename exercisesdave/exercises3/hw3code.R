@@ -39,7 +39,7 @@ source('hw3functions.R')
 B0 = rep(0,p)
 # set.seed(1)
 # B0 = Bglm + 0.5*rnorm(p)
-fit4 = newton_BFGS_backtrack(y,X,B0,m=1,tol=1e-6,iter=500,alpha=1,rho=0.8,c=0.2)
+fit4 = newton_BFGS_backtrack(y,X,B0,m=1,tol=1e-6,iter=500,alpha=1,rho=0.8,c=0.35)
 tail(fit4$Bmat)
 plot(fit4$loglik,type='l',log='xy')
 
@@ -49,9 +49,10 @@ cat(round(fit3$Bmat[20000,],digits=4))
 cat(round(Bglm,digits=4))
 
 # compare convergence
-plot(fit2$loglik,type='l',log='xy')
-lines(fit3$loglik,type='l',col='blue')
-lines(fit4$loglik,type='l',col='red')
+plot(fit2$loglik[-1],type='l',log='xy',lwd=2,bty='n',ylab='log-likelihood')
+lines(fit3$loglik[-1],type='l',col='blue',lwd=2)
+lines(fit4$loglik[c(-1,-2)],type='l',col='red',lwd=2)
+legend('topright',legend=c('GD','GD with linesearch','Quasi-Newton with linesearch'),lty=1,lwd=2,bty='n',col=c(1,'blue','red'))
 
 plot(fit2$dist,type='l',log='xy')
 lines(fit3$dist,type='l',log='xy',col='blue')
