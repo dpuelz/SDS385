@@ -1,5 +1,5 @@
-## HW1 functions ##
 
+## HW1 functions ##
 # functions
 invmethod = function(X,y,W)
 {
@@ -159,34 +159,6 @@ logliknorm = function(y,X,B)
 gradnorm = function(y,X,B)
 {
   -sum((y-X*B)*X)
-}
-
-# stochastic gradient descent
-stochgraddescent = function(y,X,B0,m=1,tol,iter,replace)
-{
-  p = dim(X)[2]
-  N = dim(X)[1]
-  Bmat = matrix(0,iter,p)
-  Bmat[1,] = B0
-  loglik = rep(0,iter)
-  distance = rep(0,iter)
-  mvec = rep(m,N)
-  
-  for(ii in 2:iter)
-  {
-    alpha = rm_step(C=40,a=.5,t=ii,t0=2)
-    # alpha=1e-2
-    ind = sample(1:N,1)
-    ysam = y[ind]
-    Xsam = t(as.matrix(X[ind,]))
-    msam = mvec[ind]
-    wsam = wts(Bmat[ii-1,],Xsam)
-    Bmat[ii,] = Bmat[ii-1,] - alpha*grad(ysam,Xsam,wsam,msam)
-    distance[ii] = dist(Bmat[ii,]-Bmat[ii-1,])
-    w = wts(Bmat[ii-1,],X)
-    loglik[ii] = loglike(y,w,m)
-  }
-  return(list(Bmat=Bmat,loglik=loglik,dist=distance))
 }
 
 # stochastic gradient descent
@@ -353,9 +325,6 @@ backtrack_BFGS = function(a,rho,c,beta,X,y,m,invHess)
   wnew = wts(beta + a*direct,X)
   left = loglike(y,wnew,m)
   right = loglike(y,wold,m) + c*a*t(grad(y,X,wold,mvec)) %*% direct
-  # cat(invHess,'\n')
-  # cat(left,'\n')
-  # cat(right,'\n')
   while(left > right)
   {
     a = rho*a
@@ -365,12 +334,61 @@ backtrack_BFGS = function(a,rho,c,beta,X,y,m,invHess)
   return(a)
 }
 
+# stochastic gradient descent
+stochgraddescent_minibatch = function(y,X,B0,m=1,tol,iter,replace,rho,c)
+{
+  p = dim(X)[2]
+  N = dim(X)[1]
+  Bmat = matrix(0,iter,p)
+  Bmat[1,] = B0
+  loglik = rep(0,iter)
+  distance = rep(0,iter)
+  mvec = rep(m,N)
+  alphause = 1
+  samsize = round(.3*N)
+  
+  for(ii in 2:iter)
+  {
+    # choose new minibatch to find stepsize every 100
+    if((ii+8) %% 10 == 0)
+    {
+      alpha = 1
+      ind = sample(1:N,samsize)
+      ysam = y[ind]
+      Xsam = as.matrix(X[ind,])
+      msam = as.numeric(mvec[ind])
+      alphause = backtrack_minibatch(alpha,rho,c,Bmat[ii-1,],Xsam,ysam,m)
+    }
+    ind1 = sample(1:N,1)
+    ysam = y[ind1]
+    Xsam = t(as.matrix(X[ind1,]))
+    msam = mvec[ind1]
+    wsam = wts(Bmat[ii-1,],Xsam)
+    Bmat[ii,] = Bmat[ii-1,] - alphause*grad(ysam,Xsam,wsam,msam)
+    distance[ii] = dist(Bmat[ii,]-Bmat[ii-1,])
+    w = wts(Bmat[ii-1,],X)
+    loglik[ii] = loglike(y,w,m)
+  }
+  return(list(Bmat=Bmat,loglik=loglik,dist=distance))
+}
 
 
-
-
-
-
+backtrack_minibatch = function(a,rho,c,beta,X,y,m)
+{
+  mvec = rep(m,length(y))
+  wold = wts(beta,X)
+  direct = grad(y,X,wold,mvec) / length(y)
+  wnew = wts(beta + a*direct,X)
+  left = loglike(y,wnew,m)
+  right = loglike(y,wold,m) + c*a*t(grad(y,X,wold,mvec)) %*% direct
+  while(left > right)
+  {
+    a = rho*a
+    wnew = wts(beta + a*direct,X)
+    left = loglike(y,wnew,m)
+  }
+  return(a)
+}
 
 
 
