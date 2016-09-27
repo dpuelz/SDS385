@@ -31,8 +31,10 @@ tail(fit2$Bmat)
 B0 = rep(0,p)
 # set.seed(1)
 # B0 = Bglm + 0.5*rnorm(p)
-fit3 = steepdescent_backtrack(y,X,B0,m=1,tol=1e-6,iter=500,alpha=1,rho=0.85,c=1e-2)
+fit3 = steepdescent_backtrack(y,X,B0,m=1,tol=1e-6,iter=500,alpha=1,rho=0.9,c=0.01)
 tail(fit3$Bmat)
+plot(fit3$loglik,type='l',log='xy')
+plot(fit3$alphastore[-1],type='l')
 
 # newton method BFGS
 source('hw3functions.R')

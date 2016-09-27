@@ -254,6 +254,7 @@ steepdescent_backtrack = function(y,X,B0,m=1,tol,iter,alpha,rho,c)
   loglik = rep(0,iter)
   distance = rep(0,iter)
   mvec = rep(m,N)
+  alphastore = 1
   
   for(ii in 2:iter)
   {
@@ -264,8 +265,9 @@ steepdescent_backtrack = function(y,X,B0,m=1,tol,iter,alpha,rho,c)
     Bmat[ii,] = Bmat[ii-1,] - alphause*grad(y,X,w,mvec)
     distance[ii] = dist(Bmat[ii,]-Bmat[ii-1,])
     if(distance[ii] <= tol){ break }
+    alphastore = c(alphastore,alphause)
   }
-  return(list(Bmat=Bmat,loglik=loglik,dist=distance))
+  return(list(Bmat=Bmat,loglik=loglik,dist=distance,alphastore=alphastore))
 }
 
 # backtracking line search for steepest descent!!!
@@ -274,15 +276,19 @@ backtrack = function(a,rho,c,beta,X,y,m)
 {
   mvec = rep(m,length(y))
   wold = wts(beta,X)
-  direct = grad(y,X,wold,mvec)
+  direct = -grad(y,X,wold,mvec)
   wnew = wts(beta + a*direct,X)
   left = loglike(y,wnew,m)
   right = loglike(y,wold,m) + c*a*t(grad(y,X,wold,mvec)) %*% direct
+  cat('left:',left,'\n')
+  cat('right:',right,'\n')
+  cat('size:',t(grad(y,X,wold,mvec)) %*% direct,'\n')
   while(left > right)
   {
     a = rho*a
     wnew = wts(beta + a*direct,X)
     left = loglike(y,wnew,m)
+    right = loglike(y,wold,m) + c*a*t(grad(y,X,wold,mvec)) %*% direct
   }
   return(a)
 }
@@ -349,7 +355,7 @@ backtrack_BFGS = function(a,rho,c,beta,X,y,m,invHess)
 {
   mvec = rep(m,length(y))
   wold = wts(beta,X)
-  direct = invHess %*% grad(y,X,wold,mvec)
+  direct = - invHess %*% grad(y,X,wold,mvec)
   wnew = wts(beta + a*direct,X)
   left = loglike(y,wnew,m)
   right = loglike(y,wold,m) + c*a*t(grad(y,X,wold,mvec)) %*% direct
@@ -361,6 +367,7 @@ backtrack_BFGS = function(a,rho,c,beta,X,y,m,invHess)
     a = rho*a
     wnew = wts(beta + a*direct,X)
     left = loglike(y,wnew,m)
+    right = loglike(y,wold,m) + c*a*t(grad(y,X,wold,mvec)) %*% direct
   }
   return(a)
 }
