@@ -280,9 +280,6 @@ backtrack = function(a,rho,c,beta,X,y,m)
   wnew = wts(beta + a*direct,X)
   left = loglike(y,wnew,m)
   right = loglike(y,wold,m) + c*a*t(grad(y,X,wold,mvec)) %*% direct
-  cat('left:',left,'\n')
-  cat('right:',right,'\n')
-  cat('size:',t(grad(y,X,wold,mvec)) %*% direct,'\n')
   while(left > right)
   {
     a = rho*a

@@ -25,8 +25,12 @@ source('hw4functions.R')
 set.seed(2)
 # B0 = Bglm + rnorm(11)
 B0= rep(0,p)
-iter=1000
-fit3 = stochgraddescent_minibatch(y,X,B0,m=1,tol=1e-6,iter,replace=FALSE,rho=0.9,c=0.1)
+iter=10000
+fit3 = stochgraddescent_minibatch(y,X,B0,m=1,tol=1e-6,iter,replace=FALSE,rho=0.95,c=0.35)
 tail(fit3$Bmat)
 plot(fit3$loglik[-1],type='l',log='xy',lwd=2,bty='n',ylab='log-likelihood')
 plot(fit3$alphastore[-1],type='l',lwd=2,bty='n',ylab='step-size')
+
+# compare glm and other algorithms
+cat(round(fit3$Bmat[iter,],digits=4))
+cat(round(Bglm,digits=4))

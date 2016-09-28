@@ -31,7 +31,7 @@ tail(fit2$Bmat)
 B0 = rep(0,p)
 # set.seed(1)
 # B0 = Bglm + 0.5*rnorm(p)
-fit3 = steepdescent_backtrack(y,X,B0,m=1,tol=1e-6,iter=500,alpha=1,rho=0.9,c=0.01)
+fit3 = steepdescent_backtrack(y,X,B0,m=1,tol=1e-6,iter=1000,alpha=1,rho=0.9,c=0.35)
 tail(fit3$Bmat)
 plot(fit3$loglik,type='l',log='xy')
 plot(fit3$alphastore[-1],type='l')
@@ -47,7 +47,7 @@ plot(fit4$loglik,type='l',log='xy')
 
 # compare glm and steepest descent algorithms
 cat(round(fit2$Bmat[20000,],digits=4))
-cat(round(fit3$Bmat[20000,],digits=4))
+cat(round(fit3$Bmat[1000,],digits=4))
 cat(round(Bglm,digits=4))
 
 # compare convergence

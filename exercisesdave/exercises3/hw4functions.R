@@ -240,8 +240,6 @@ steepdescent_backtrack = function(y,X,B0,m=1,tol,iter,alpha,rho,c)
   return(list(Bmat=Bmat,loglik=loglik,dist=distance))
 }
 
-# backtracking line search for steepest descent!!!
-# Q: can I define new sub-function from a general function?
 backtrack = function(a,rho,c,beta,X,y,m)
 {
   mvec = rep(m,length(y))
@@ -250,6 +248,9 @@ backtrack = function(a,rho,c,beta,X,y,m)
   wnew = wts(beta + a*direct,X)
   left = loglike(y,wnew,m)
   right = loglike(y,wold,m) + c*a*t(grad(y,X,wold,mvec)) %*% direct
+  cat('left:',left,'\n')
+  cat('right:',right,'\n')
+  cat('size:',t(grad(y,X,wold,mvec)) %*% direct,'\n')
   while(left > right)
   {
     a = rho*a
@@ -350,49 +351,52 @@ stochgraddescent_minibatch = function(y,X,B0,m=1,tol,iter,replace,rho,c)
   loglik = rep(0,iter)
   distance = rep(0,iter)
   mvec = rep(m,N)
-  alphause = 1
+  alphause = 1e-1
   alphastore = alphause
   samsize = round(.3*N)
   
   for(ii in 2:iter)
   {
-    # choose new minibatch to find stepsize every 100
-    if((ii+18) %% 20 == 0)
-    {
-      alpha = 1
-      ind = sample(1:N,samsize)
-      ysam = y[ind]
-      Xsam = as.matrix(X[ind,])
-      alphause = backtrack_minibatch(alpha,rho,c,Bmat[ii-1,],Xsam,ysam,m)
-    }
     ind1 = sample(1:N,1)
     ysam = y[ind1]
     Xsam = t(as.matrix(X[ind1,]))
-    msam = mvec[ind1]
+    msam = 1 # hard code here
     wsam = wts(Bmat[ii-1,],Xsam)
+    
+    # choose new minibatch to find stepsize every 20
+    if((ii) %% 10 == 0)
+    {
+      # choose the minibatch
+      ind = sample(1:N,samsize)
+      yminibatch = y[ind]
+      Xminibatch = as.matrix(X[ind,])
+      mvec = rep(m,length(yminibatch))
+      wold = wts(Bmat[ii-1,],Xminibatch)
+      avggrad = grad(yminibatch,Xminibatch,wold,rep(m,samsize)) / length(yminibatch)
+
+      # select the new stepsize
+      alpha = 1e-2
+      alphause = backtrack_minibatch(alpha,rho,c,Bmat[ii-1,],Xsam,ysam,m,avggrad)
+    }
+    
     Bmat[ii,] = Bmat[ii-1,] - alphause*grad(ysam,Xsam,wsam,msam)
     distance[ii] = dist(Bmat[ii,]-Bmat[ii-1,])
     w = wts(Bmat[ii-1,],X)
     loglik[ii] = loglike(y,w,m)
-    
     alphastore = c(alphastore,alphause)
   }
   return(list(Bmat=Bmat,loglik=loglik,dist=distance,alphastore=alphastore))
 }
 
 
-backtrack_minibatch = function(a,rho,c,beta,X,y,m)
+backtrack_minibatch = function(a,rho,c,beta,X,y,m,avggrad)
 {
   mvec = rep(m,length(y))
   wold = wts(beta,X)
-  direct = - grad(y,X,wold,mvec) / length(y)
-  # direct = - grad(y,X,wold,mvec)
+  direct = - avggrad
   wnew = wts(beta + a*direct,X)
   left = loglike(y,wnew,m)
   right = loglike(y,wold,m) + c*a*t(grad(y,X,wold,mvec)) %*% direct
-  cat('left:',left,'\n')
-  cat('right:',right,'\n')
-  cat('size:',t(grad(y,X,wold,mvec)) %*% direct,'\n')
   while(left > right)
   {
     a = rho*a
