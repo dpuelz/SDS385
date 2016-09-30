@@ -1,27 +1,51 @@
 //[[Rcpp::depends(RcppArmadillo)]]
+//[[Rcpp::depends(RcppEigen)]]
 //[[Rcpp::plugins(cpp11)]]
+#include <Eigen/Sparse>
+#include <Eigen/Dense>
 #include <RcppArmadillo.h>
+#include <RcppEigen.h>
 #include <cmath>
 #include <time.h>
 #include <stdlib.h>
 #include <iostream>
+
 using namespace Rcpp; 
 using namespace arma;
+using namespace Eigen;
 using namespace std;
 
+/* The stochastic gradient descent function */
+
 //[[Rcpp::export]]
-List sgd_iteration(int nSamp)
+List sgd_iteration(VectorXd y, SparseMatrix<double> X, VectorXd B0)
 {
+    // Compile-time constants--baked into code
+    constexpr float adagradEpsilon = 1e-7;
+    constexpr float m = 1.0;
+    int nPred = X.cols();
+    int nSamp = X.rows();
+
+    VectorXd agWeights = VectorXd::Constant(nPred, 1e-3);
+    VectorXd objTracker = VectorXd::Zero(nPred);
+    float betaNormSquared = B0.norm() * B0.norm();
+    constexpr float nllWt = 0.01; //Term for weighting the NLL exponential decay
+    cout << nPred << endl;
+    cout << nSamp << endl;
+    
     int cc;
     cc = 0;
 
+    // The big loop!!
     for(int i = 0; i < nSamp; i++)
     {
-        cout << i << endl;
+        // cout << y(i) << endl;
         cc = cc + 20;
     }
     return List::create(Named("thecount") = cc);
 }
+
+/* Function for converting R sparse matrix to Cpp sparse matrix */
 
 
 
