@@ -49,7 +49,7 @@ X = cbind(rep(1,length(ya)),X)
 fit = glm(y~X-1,family='binomial')
 Bglm = fit$coefficients
 
-# steepest descent
+# SGD descent
 set.seed(2)
 B0 = Bglm + rnorm(11)
 iter=100000

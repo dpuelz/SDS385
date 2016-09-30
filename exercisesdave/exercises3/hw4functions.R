@@ -364,7 +364,7 @@ stochgraddescent_minibatch = function(y,X,B0,m=1,tol,iter,replace,rho,c)
     wsam = wts(Bmat[ii-1,],Xsam)
     
     # choose new minibatch to find stepsize every 20
-    if((ii) %% 10 == 0)
+    if((ii) %% 30 == 0)
     {
       # choose the minibatch
       ind = sample(1:N,samsize)
@@ -406,6 +406,42 @@ backtrack_minibatch = function(a,rho,c,beta,X,y,m,avggrad)
   }
   return(a)
 }
+
+# Adaptive stochastic gradient descent
+Adagrad = function(y,X,B0,m=1,tol,iter,replace)
+{
+  p = dim(X)[2]
+  N = dim(X)[1]
+  Bmat = matrix(0,iter,p)
+  Bmat[1,] = B0
+  loglik = rep(0,iter)
+  distance = rep(0,iter)
+  mvec = rep(m,N)
+  grad2 = rep(0,p)
+  
+  for(ii in 2:iter)
+  {
+    # alpha = rm_step(C=40,a=.5,t=ii,t0=2)
+    alpha=1e-1
+    ind = sample(1:N,1)
+    ysam = y[ind]
+    Xsam = t(as.matrix(X[ind,]))
+    msam = mvec[ind]
+    wsam = wts(Bmat[ii-1,],Xsam)
+    
+    # adaptive gradient adjustment here
+    dagrad = grad(ysam,Xsam,wsam,msam)
+    grad2 = grad2 + dagrad^2
+    dagrad = dagrad / (1e-6 + sqrt(grad2))
+    
+    Bmat[ii,] = Bmat[ii-1,] - alpha*dagrad
+    distance[ii] = dist(Bmat[ii,]-Bmat[ii-1,])
+    w = wts(Bmat[ii-1,],X)
+    loglik[ii] = loglike(y,w,m)
+  }
+  return(list(Bmat=Bmat,loglik=loglik,dist=distance))
+}
+
 
 
 

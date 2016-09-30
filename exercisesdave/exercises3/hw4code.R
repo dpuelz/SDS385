@@ -34,3 +34,16 @@ plot(fit3$alphastore[-1],type='l',lwd=2,bty='n',ylab='step-size')
 # compare glm and other algorithms
 cat(round(fit3$Bmat[iter,],digits=4))
 cat(round(Bglm,digits=4))
+
+# Adagrad implementation
+source('hw4functions.R')
+set.seed(2)
+B0= rep(0,p)
+iter=100000
+fit4 = Adagrad(y,X,B0,m=1,tol=1e-6,iter,replace=FALSE)
+tail(fit4$Bmat)
+plot(fit4$loglik[-1],type='l',log='xy',lwd=2,bty='n',ylab='log-likelihood')
+
+# compare glm and other algorithms
+cat(round(fit4$Bmat[iter,],digits=4))
+cat(round(Bglm,digits=4))
