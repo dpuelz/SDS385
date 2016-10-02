@@ -1,5 +1,15 @@
 ### Some functions ###
 
+## CROSS VALIDATION FUNCTIONS ##
+CVfit = function(y,X,B0,lambda,masterStepSize,prop)
+{
+  total = length(y)
+  trainsize = round(prop*total)
+  test = davesgdCV(y,X,B0,lambda,masterStepSize,train=trainsize)
+}
+
+
+
 # read svmlight format matrix for classification problem
 # each row is in the following format
 # label feature1:val1 feature2:val2 ... featureK:valK
@@ -58,3 +68,7 @@ processSVM = function(location)
   saveRDS(X, file='url_X.rds')
   saveRDS(y, file='url_y.rds')
 }
+
+
+
+
