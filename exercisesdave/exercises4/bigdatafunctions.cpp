@@ -30,16 +30,20 @@ List sgd_iteration(VectorXd y, SparseMatrix<double> X, VectorXd B0)
     VectorXd objTracker = VectorXd::Zero(nPred);
     float betaNormSquared = B0.norm() * B0.norm();
     constexpr float nllWt = 0.01; //Term for weighting the NLL exponential decay
-    cout << nPred << endl;
-    cout << nSamp << endl;
+    VectorXd Xsamp = VectorXd::Zero(nPred);
+
+    // Last updated term
+    vector<int> lastUpdate = vector<int>(nPred);
     
     int cc;
     cc = 0;
 
     // The big loop!!
     for(int i = 0; i < nSamp; i++)
-    {
-        // cout << y(i) << endl;
+    {   
+        Xsamp = X.col(i);
+
+        cout << Xsamp << endl;
         cc = cc + 20;
     }
     return List::create(Named("thecount") = cc);
