@@ -46,8 +46,8 @@ List davesgd(VectorXf res, SparseMatrix<float,RowMajor,int> X, VectorXf B0, floa
     int nPred = X.cols();
     int nSamp = X.rows();
     
-    cout << nPred << endl;
-    cout << nSamp << endl;
+    // cout << nPred << endl;
+    // cout << nSamp << endl;
 
     VectorXf agWeights = VectorXf::Constant(nPred, 1e-3);
     VectorXf objTracker = VectorXf::Zero(nSamp);
@@ -64,30 +64,14 @@ List davesgd(VectorXf res, SparseMatrix<float,RowMajor,int> X, VectorXf B0, floa
     {
       // cout << i << endl;
       
-      // std::cout << "B0 contains:";
-      // for (unsigned i=0; i<20; i++)
-      // {
-      //   std::cout << ' ' << B0(i);
-      // }
-      // std::cout << '\n';
-      
       BetaVec Xsamp =X.row(i);
-      // VectorXf Xsamp1 = X.row(i);
-      // BetaVec Xsamp = Xsamp1.sparseView();
       float XB = Xsamp.dot(B0);
       float w = 1 / (1 + exp(-XB));
       float y = res(i);
       float logitDelta = y - m * w;
 
       nllAvg = (1-nllWt) * nllAvg + nllWt * (m * log(w + 1e-6) * (y-m) * log(1 - w + 1e-6));
-      objTracker(cc) = nllAvg;
-      
-      // std::cout << "Xsamp contains:";
-      // for (unsigned i=0; i<20; i++)
-      // {
-      //   std::cout << ' ' << VectorXf(Xsamp)(i);
-      // }
-      // std::cout << '\n';
+      objTracker(cc) = -nllAvg;
       
       // Inner loop to update the betas!
       for(BetaVec::InnerIterator it(Xsamp); it; ++it)

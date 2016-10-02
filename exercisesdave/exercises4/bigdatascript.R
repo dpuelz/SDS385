@@ -23,10 +23,12 @@ ysam = y[1:samps]
 
 sourceCpp('bigdatafunctions.cpp')
 B0 = rep(0,dim(Xsam)[2])
-test=davesgd(ysam,Xsam,B0,lambda = 1e-5,masterStepSize = 1e-1)
+test=davesgd(ysam,Xsam,B0,lambda = 1e-5,masterStepSize = 1e-2)
 plot(test$Likelihood,type='l',col='black',lwd=1)
 
 sourceCpp('bigdatafunctions.cpp')
 B0 = rep(0,dim(X)[2])
-test=davesgd(y,X,B0,lambda = 1e-5,masterStepSize = 1e-1)
+ptm <- proc.time()
+test=davesgd(y,X,B0,lambda = 1e-2,masterStepSize = 1e-2)
+proc.time() - ptm
 plot(test$Likelihood,type='l',col='black',lwd=1)
