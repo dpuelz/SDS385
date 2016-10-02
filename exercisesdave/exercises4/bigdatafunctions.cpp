@@ -3,7 +3,6 @@
 //[[Rcpp::plugins(cpp11)]]
 #include <Eigen/Sparse>
 #include <Eigen/Dense>
-#include <RcppArmadillo.h>
 #include <RcppEigen.h>
 #include <cmath>
 #include <stdlib.h>
@@ -15,7 +14,6 @@
 #include "tinydir.h"
 
 using namespace Rcpp; 
-using namespace arma;
 using namespace Eigen;
 using namespace std;
 
@@ -39,14 +37,18 @@ static inline float invSqrt( const float& number )
 /* The stochastic gradient descent function */
 
 //[[Rcpp::export]]
-List davesgd(VectorXf res, SparseMatrix<float> X, VectorXf B0, float lambda, float masterStepSize)
+List davesgd(VectorXf res, SparseMatrix<float,RowMajor,int> X, VectorXf B0, float lambda, float masterStepSize)
 {
+
     // Compile-time constants--baked into code
-    constexpr float adagradEpsilon = 1e-7;
+    constexpr float adagradEpsilon = 1e-6;
     constexpr float m = 1.0;
     int nPred = X.cols();
     int nSamp = X.rows();
     
+    cout << nPred << endl;
+    cout << nSamp << endl;
+
     VectorXf agWeights = VectorXf::Constant(nPred, 1e-3);
     VectorXf objTracker = VectorXf::Zero(nSamp);
     float betaNormSquared = B0.norm() * B0.norm();
@@ -60,20 +62,38 @@ List davesgd(VectorXf res, SparseMatrix<float> X, VectorXf B0, float lambda, flo
     // The big loop!!
     for(int i = 0; i < nSamp; i++)
     {
-      SparseVector<float> Xsamp = X.row(i);
+      // cout << i << endl;
+      
+      // std::cout << "B0 contains:";
+      // for (unsigned i=0; i<20; i++)
+      // {
+      //   std::cout << ' ' << B0(i);
+      // }
+      // std::cout << '\n';
+      
+      BetaVec Xsamp =X.row(i);
+      // VectorXf Xsamp1 = X.row(i);
+      // BetaVec Xsamp = Xsamp1.sparseView();
       float XB = Xsamp.dot(B0);
       float w = 1 / (1 + exp(-XB));
       float y = res(i);
       float logitDelta = y - m * w;
 
-      nllAvg = (1-nllWt) * nllAvg + nllWt * (m * log(w) * (y-m) * log(1 - w));
+      nllAvg = (1-nllWt) * nllAvg + nllWt * (m * log(w + 1e-6) * (y-m) * log(1 - w + 1e-6));
       objTracker(cc) = nllAvg;
-
+      
+      // std::cout << "Xsamp contains:";
+      // for (unsigned i=0; i<20; i++)
+      // {
+      //   std::cout << ' ' << VectorXf(Xsamp)(i);
+      // }
+      // std::cout << '\n';
+      
       // Inner loop to update the betas!
       for(BetaVec::InnerIterator it(Xsamp); it; ++it)
       {
         int j = it.index();
-
+      
         // Deferred L2 updates, see comment above this for-loop
         float skip = cc - lastUpdate[j];
         float l2Penalty = (lambda * skip) * B0(j);
