@@ -3,6 +3,7 @@
 ################################################################
 
 library(Rcpp)
+library(Matrix)
 library(RcppArmadillo)
 library(RcppEigen)
 library(pryr)
@@ -13,8 +14,11 @@ sourceCpp('bigdatafunctions.cpp')
 # read in da big data
 X=readRDS('url_X.rds')
 y=readRDS('url_y.rds')
-dim(X)
-B0 = rep(0,dim(X)[2])
-# test the Cpp function
-sgd_iteration(10000,y,X,B0)
 
+samps = 100000
+Xsam = X[1:samps,]
+ysam = y[1:samps]
+
+B0 = rep(0,dim(Xsam)[2])
+test=davesgd(ysam,Xsam,B0,lambda = 0,masterStepSize = 1e-1)
+plot(test$Likelihood,type='l')

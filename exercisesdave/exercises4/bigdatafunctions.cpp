@@ -6,344 +6,109 @@
 #include <RcppArmadillo.h>
 #include <RcppEigen.h>
 #include <cmath>
-#include <time.h>
 #include <stdlib.h>
 #include <iostream>
+
+// additional header file from Kevin
+#include "usertypes.hpp"
+#include "sgd_utility.hpp"
+#include "tinydir.h"
 
 using namespace Rcpp; 
 using namespace arma;
 using namespace Eigen;
 using namespace std;
 
+/* Some other useful functions for speed (from Kevin) */
+
+union cast_single{ uint32_t asInt; float asFloat; };
+static inline float invSqrt( const float& number )
+{ 
+  cast_single caster;
+  constexpr float threehalfs = 1.5F;
+  float x2 = number * 0.5F;
+  caster.asFloat  = number;
+  caster.asInt  = 0x5f3759df - ( caster.asInt >> 1 );               // what the fuck?
+  float y  = caster.asFloat;
+  y  = y * ( threehalfs - ( x2 * y * y ) );   // 1st iteration
+  y  = y * ( threehalfs - ( x2 * y * y ) );   // 2nd iteration, this can be removed
+  
+  return y;
+}
+
 /* The stochastic gradient descent function */
 
 //[[Rcpp::export]]
-List sgd_iteration(VectorXd y, SparseMatrix<double> X, VectorXd B0)
+List davesgd(VectorXf res, SparseMatrix<float> X, VectorXf B0, float lambda, float masterStepSize)
 {
     // Compile-time constants--baked into code
     constexpr float adagradEpsilon = 1e-7;
     constexpr float m = 1.0;
     int nPred = X.cols();
     int nSamp = X.rows();
-
-    VectorXd agWeights = VectorXd::Constant(nPred, 1e-3);
-    VectorXd objTracker = VectorXd::Zero(nPred);
-    float betaNormSquared = B0.norm() * B0.norm();
-    constexpr float nllWt = 0.01; //Term for weighting the NLL exponential decay
-    VectorXd Xsamp = VectorXd::Zero(nPred);
-
-    // Last updated term
-    vector<int> lastUpdate = vector<int>(nPred);
     
-    int cc;
-    cc = 0;
+    VectorXf agWeights = VectorXf::Constant(nPred, 1e-3);
+    VectorXf objTracker = VectorXf::Zero(nSamp);
+    float betaNormSquared = B0.norm() * B0.norm();
+    float nllAvg = 0;
+    constexpr float nllWt = 0.01; //Term for weighting the NLL exponential decay
+
+    // // Last updated term
+    vector<int> lastUpdate = vector<int>(nPred);
+    uint64_t cc = 0; //Iteration counter
 
     // The big loop!!
     for(int i = 0; i < nSamp; i++)
-    {   
-        Xsamp = X.col(i);
+    {
+      SparseVector<float> Xsamp = X.row(i);
+      float XB = Xsamp.dot(B0);
+      float w = 1 / (1 + exp(-XB));
+      float y = res(i);
+      float logitDelta = y - m * w;
 
-        cout << Xsamp << endl;
-        cc = cc + 20;
+      nllAvg = (1-nllWt) * nllAvg + nllWt * (m * log(w) * (y-m) * log(1 - w));
+      objTracker(cc) = nllAvg;
+
+      // Inner loop to update the betas!
+      for(BetaVec::InnerIterator it(Xsamp); it; ++it)
+      {
+        int j = it.index();
+
+        // Deferred L2 updates, see comment above this for-loop
+        float skip = cc - lastUpdate[j];
+        float l2Penalty = (lambda * skip) * B0(j);
+        lastUpdate[j] = cc;
+
+        // Calculate gradient(j), this element of the gradient
+        float elem_gradient = -logitDelta * it.value() - l2Penalty;
+
+        // Update weights for Adagrad
+        agWeights(j) += elem_gradient * elem_gradient;
+
+        // Calculate the scaling factor using fast-inverse-square-root
+        float h = invSqrt(agWeights(j) + adagradEpsilon);
+
+        float scaleFactor = masterStepSize * h;
+        float totalDelta = scaleFactor * elem_gradient;
+        B0(j) -= totalDelta; //Update this element
+
+        // Update beta norm squared with (a+b)^2 = a^2 + 2ab + b^2
+        betaNormSquared += 2 * totalDelta * B0(j) + totalDelta * totalDelta;
+      }
+      cc++;
     }
-    return List::create(Named("thecount") = cc);
-}
 
-/* Function for converting R sparse matrix to Cpp sparse matrix */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-
-// This is Jingyu's code down here
-
-inline double hs(arma::mat beta, double v);
-inline double dgamma_cpp(double x, double a, double b); 
-inline double dt_cpp(double x, int n);
-
-List treatment_new(int n, arma::mat YY, arma::mat YXd, arma::mat XdXd, arma::mat DD, arma::mat DX, arma::mat XX, arma::vec beta_hat, arma::vec gamma_hat, double alpha_hat, arma::vec delta, arma::mat X, arma::vec Y, arma::vec d, double s0 = 5.0, double tad = 0.2, double sy = 1.0, double sd = 1.0, int nsamps = 10000, int burn = 1000, int skip = 1)
-{
-	
-	burn = burn + 1;
-
-    int p = gamma_hat.n_elem;
-    
-    double syeps;
-    double ssq;
-    double ly;
-    double thetaprop;
-    double thetamin;
-    double thetamax;
-    double piprop;
-    double picurr;
-    double vy;
-    double vd;
-    double vprop;
-    vy = 0.01;
-    vd = 0.01;
-
-	arma::mat U;
-	arma::vec D;
-	arma::mat V;
-	svd(U,D,V,XdXd);
-	arma::mat Linvy = U.cols(0,p) * diagmat(1/sqrt(D));
-
-
-    svd(U,D,V,XX);
-    arma::mat Linvd = U.cols(0,p-1) * diagmat(1/sqrt(D));
-    
-    arma::vec beta_tilde(p);
-    
-    
-	//initialize
-	arma::mat betasamps(p,nsamps);
-	betasamps.fill(0.0);
-	
-    arma::mat gammasamps(p,nsamps);
-    gammasamps.fill(0.0);
-    
-    
-    arma::vec alphasamps(nsamps);
-	alphasamps.fill(0.0);
-    
-	arma::vec vysamps(nsamps);
-	vysamps.fill(0.0);
-
-
-    arma::vec vdsamps(nsamps);
-    vdsamps.fill(0.0);
-    
-  
-    arma::vec sdsamps(nsamps);
-    sdsamps.fill(0.0);
-   
-    arma::vec sysamps(nsamps);
-    sysamps.fill(0.0);
-    
-
-    int loopcount = 0;
-    arma::vec loops(nsamps);
-    loops.fill(0);
-    
-    
-    double u;
-    
-    arma::mat nu;
-    nu.fill(0.0);
-    
-    arma::mat nuy;
-    nu.fill(0.0);
-    
-    arma::mat nud;
-    nu.fill(0.0);
-    
-    arma::vec epsy(p+1);
-    epsy.fill(0.0);
-
-    arma::vec epsd(p);
-    epsd.fill(0.0);
-
-    
-    arma::uvec temp;
-    arma::vec all_one;
-    arma::mat delta_prop;
-    arma::vec temp2;
-    double priorcomp;
-    double alpha_prop;
-	
-	clock_t t1, t2;
-	
-	t1 = clock();
-	
-    
-    arma::vec beta = beta_hat + delta.rows(1,p);
-    double alpha = as_scalar(alpha_hat + delta.rows(0,0));
-    //double alpha = alpha_hat;
-    arma::vec gamma = gamma_hat + delta.rows(p+1,2*p);
-    
-    arma::vec alpha_beta(p+1);
-    
-    beta_tilde = beta + alpha*gamma;
-    
-    for (int h = 0; h < nsamps; ++h)
-	{
-        
-        for (int skiploop = 0; skiploop < skip; ++skiploop){
-        
-        loopcount = 0;
-            
-            
-            
-        epsy = rnorm(Linvy.n_cols);
-		nuy = Linvy * epsy;
-        
-        epsd = rnorm(Linvd.n_cols);
-        nud = Linvd * epsd;
-            
-            
-        nu = join_cols(sy*nuy, sd*nud);
-                
-		u = runif(1,0,1)[0];
-		
-            priorcomp = hs(beta_tilde, vy) + hs(gamma,vd) + R::dnorm(alpha, 0.0, sd, 1);
-	
-        //    priorcomp = hs(beta, vy) + hs(gamma,vd);
-            
-		ly = priorcomp + log(u);
-
-		thetaprop = runif(1,0,2*M_PI)[0];
-		
-		delta_prop = delta * cos(thetaprop) + nu * sin(thetaprop);
-            
-		thetamin = thetaprop - 2.0 * M_PI;
-		
-		thetamax = thetaprop;
-
-            while (hs(beta_hat + delta_prop.rows(1,p) + as_scalar(alpha_hat + delta_prop.rows(0,0))*(gamma_hat + delta_prop.rows(p+1,2*p)), vy) + hs(gamma_hat + delta_prop.rows(p+1,2*p),vd) + R::dnorm(as_scalar(alpha_hat + delta_prop.rows(0,0)),0.0,sd,1) < ly)
-		
-          //   while (hs(beta_hat + delta_prop.rows(1,p), vy) + hs(gamma_hat + delta_prop.rows(p+1,2*p),vd) < ly)
-            {
-            loopcount += 1;
-			if (thetaprop < 0)
-			{
-				thetamin = thetaprop;
-			}else
-			{thetamax = thetaprop;}
-
-			thetaprop = runif(1,thetamin,thetamax)[0];
-			
-			delta_prop = delta * cos(thetaprop) + nu * sin(thetaprop);
-
-		}
-
-            
-       
-          //  alpha_prop = alpha_hat + sy*alpha_prop*as<double>(rnorm(1))*as_scalar(Linvy.submat(0,0,0,0));
-          //  alpha_prop = alpha + 0.1*as<double>(rnorm(1));
-            
-         
-           // piprop = hs(beta + (alpha_prop)*gamma, vy);
-           // picurr = hs(beta + alpha*gamma, vy);
-        
-            
-           // if (as_scalar(randu(1)) < exp(piprop-picurr))
-           // {
-           //     alpha = alpha_prop;
-           //    delta.rows(0,0) = alpha_prop - alpha_hat;
-           // }
-          
-            
-            
-            
-            
-            
-            
-            
-        delta = delta_prop;
-        beta = beta_hat + delta.rows(1,p);
-            alpha = as_scalar(alpha_hat + delta.rows(0,0));
-
-            gamma = gamma_hat + delta.rows(p+1,2*p);
-            beta_tilde = beta + alpha*gamma;
-
-           
-		
-            
-            alpha_prop = as_scalar((trans(Y) - trans(X*beta_tilde))*(d-X*gamma));
-            syeps = sqrt(as_scalar((trans(Y) - trans(X*beta_tilde))*(Y - X*beta_tilde)/n));
-          alpha_prop = alpha_prop/as_scalar(trans(d-X*gamma)*(d-X*gamma));
-            alpha_prop = alpha_prop + syeps*as<double>(rnorm(1))/sqrt(1/pow(sd*s0,2) + as_scalar(trans(d-X*gamma)*(d-X*gamma)));
-            
-         //   picurr = hs(beta + alpha*gamma, vy);
-          //  piprop = hs(beta + alpha_prop*gamma, vy);
-            
-            
-          //  if (as_scalar(randu(1)) < exp(piprop-picurr))
-          //  {
-           //     alpha = alpha_prop;
-           // }
-            
-            alpha = alpha_prop;
-            delta.rows(0,0) = alpha - alpha_hat;
-            
-            beta = beta_tilde - alpha*gamma;
-            
-            delta.rows(1,p) = beta - beta_hat;
-            
-            alpha_beta.subvec(0,0) = alpha;
-            alpha_beta.subvec(1,p) = beta;
-            
-        
-        vprop = exp(log(vd) + tad*as_scalar(randn(1)));
-		
- 		piprop = hs(gamma, vprop) + log(dt_cpp(vprop, 1));
- 		picurr = hs(gamma, vd) + log(dt_cpp(vd, 1));
-        
-        if (as_scalar(randu(1)) < exp(piprop-picurr))
-        {
-            vd = vprop;
-        }
-            
-            vprop = exp(log(vy) + tad*as_scalar(randn(1)));
-            
-            piprop = hs(beta + alpha*gamma, vprop) + log(dt_cpp(vprop, 1));
-            picurr = hs(beta + alpha*gamma, vy) + log(dt_cpp(vy, 1));
-            
-            if (as_scalar(randu(1)) < exp(piprop-picurr))
-            {
-                vy = vprop;
-            }
-            
-        
-            
-            
-            
-            
-		ssq = as_scalar(YY) - 2 * as_scalar(YXd * alpha_beta) + as_scalar(trans(alpha_beta) * XdXd * alpha_beta);
-		sy = 1.0/sqrt(rgamma(1,n/2.0, 2.0/ssq)[0]);
-       
-        ssq = as_scalar(DD) - 2 * as_scalar(DX * gamma) + as_scalar(trans(gamma) * XX * gamma) + pow(alpha,2.0);
-        sd = 1.0/sqrt(rgamma(1,n/2.0, 2.0/ssq)[0]);
-            
-            
-        }
-
-        
-        betasamps.col(h) = beta;
-        gammasamps.col(h) = gamma;
-        alphasamps(h) = alpha;
- 
-        loops(h) = loopcount;
-        
-        vysamps(h) = vy;
-        vdsamps(h) = vd;
-        sysamps(h) = sy;
-        sdsamps(h) = sd;
-        
-        
-
-	}
-	
-	t2 = clock();
-	float time_elapse =  ((float)t2-(float)t1);
-	time_elapse = time_elapse/CLOCKS_PER_SEC;
-	
-	
-    return List::create(Named("beta") = betasamps, Named("alpha") = alphasamps, Named("loops") = loops, Named("sigy") = sysamps, Named("sigd") = sdsamps, Named("vy") = vysamps, Named("vd") = vdsamps);
+    // Apply any ridge-regression penalties that we have not yet evaluated
+    for(int j = 0; j < nPred; j++)
+    {
+      float skip = cc - lastUpdate[j];
+      float l2Delta = lambda * skip * B0(j);
+      float h = invSqrt(agWeights(j) + adagradEpsilon);
+      float scaleFactor = masterStepSize * h;
+      float totalDelta = scaleFactor * l2Delta;
+      B0(j) -= totalDelta;
+    }
+  return List::create(Named("Likelihood") = objTracker);
 }
 
 
@@ -352,30 +117,7 @@ List treatment_new(int n, arma::mat YY, arma::mat YXd, arma::mat XdXd, arma::mat
 
 
 
-inline double hs(arma::mat beta, double v)
-{
-  arma::vec beta2 = conv_to<vec>::from(beta);
-  beta2 = beta2/v;
-
-  arma::vec temp = log(log(1.0 + 4.0/(pow(beta2,2.0))));
-  double ll;
-    ll = sum(temp) - beta2.n_elem*log(v);
-  return ll;
-}
-
-inline double dgamma_cpp(double x, double a, double b) 
-{
-    double c;
-    c = pow(b,a)/tgamma(a)*pow(x,a-1.0)*exp(-b*x);
-    return c;
-}
 
 
-inline double dt_cpp(double x, int n)
-{
-  double c;
-  c = tgamma((n+1.0)/2)/tgamma(n/2.0)/sqrt(n*datum::pi) * pow((1.0+pow(x,2)/n),-(n+1)/2.0);
-  return c;
-}
 
- 	*/
+
