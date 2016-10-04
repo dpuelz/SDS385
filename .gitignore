@@ -37,3 +37,4 @@ vignettes/*.pdf
 *.synctex.gz
 *.rds
 
+.Rproj.user

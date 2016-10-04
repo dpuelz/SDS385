@@ -3,12 +3,12 @@
 ## CROSS VALIDATION FUNCTIONS ##
 CVfit = function(y,X,B0,lambda,masterStepSize,prop)
 {
+  # sourceCpp('bigdatafunctions.cpp')
   total = length(y)
   trainsize = round(prop*total)
   test = davesgdCV(y,X,B0,lambda,masterStepSize,train=trainsize)
+  return(test)
 }
-
-
 
 # read svmlight format matrix for classification problem
 # each row is in the following format
