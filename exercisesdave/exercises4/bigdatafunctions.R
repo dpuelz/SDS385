@@ -1,12 +1,12 @@
 ### Some functions ###
 
 ## CROSS VALIDATION FUNCTIONS ##
-CVfit = function(y,X,B0,lambda,masterStepSize,prop)
+CVfit = function(y,X,B0,lambda,masterStepSize,prop,npass)
 {
   # sourceCpp('bigdatafunctions.cpp')
   total = length(y)
   trainsize = round(prop*total)
-  test = davesgdCV(y,X,B0,lambda,masterStepSize,train=trainsize)
+  test = davesgdCV(y,X,B0,lambda,masterStepSize,train=trainsize,npass)
   return(test)
 }
 

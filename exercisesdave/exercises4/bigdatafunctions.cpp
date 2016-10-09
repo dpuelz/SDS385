@@ -9,6 +9,7 @@
 
 // additional header file from Kevin
 #include "usertypes.hpp"
+#include "ezRateProgressBar.hpp"
 
 using namespace Rcpp;
 using namespace Eigen;
@@ -38,7 +39,7 @@ static inline float invSqrt( const float& number )
 
 /* The stochastic gradient descent function */
 //[[Rcpp::export]]
-List davesgdCV(VectorXf res, SparseMatrix<float,RowMajor,int> X, VectorXf B0, float lambda, float masterStepSize, int train)
+List davesgdCV(VectorXf res, SparseMatrix<float,RowMajor,int> X, VectorXf B0, float lambda, float masterStepSize, int train, int npass)
 {
   // Compile-time constants--baked into code
   constexpr float m = 1.0;
@@ -55,10 +56,9 @@ List davesgdCV(VectorXf res, SparseMatrix<float,RowMajor,int> X, VectorXf B0, fl
   int nSamp = Xtrain.rows();
   int nSamptest = Xtest.rows();
 
-  VectorXf agWeights = VectorXf::Constant(nPred, 1e-3);
-  VectorXf objTracker = VectorXf::Zero(nSamp);
+  VectorXf objTracker = VectorXf::Zero(nSamp*npass);
   float nllAvg = 0;
-  constexpr float nllWt = 0.01; //Term for weighting the NLL exponential decay
+  constexpr float nllWt = 0.001; //Term for weighting the NLL exponential decay
   
   // Initialize Gsquared and beta
   VectorXf Beta(nPred);
@@ -72,67 +72,78 @@ List davesgdCV(VectorXf res, SparseMatrix<float,RowMajor,int> X, VectorXf B0, fl
   // // Last updated term
   vector<int> lastUpdate = vector<int>(nPred);
   uint64_t cc = 0; //Iteration counter
-
-  // The big loop to train!!
-  for(int i = 0; i < nSamp; i++)
+  int bigcount = 0;
+  
+  int tot =  nSamp*npass;
+  ez::ezRateProgressBar<int> p(tot);
+  p.units = "MB";
+  p.start();
+  
+  for(int nn = 0; nn < npass; nn++)
   {
-    BetaVec Xsamp =Xtrain.row(i);
-    float XB = alpha + Xsamp.dot(Beta);
-    float w = 1 / (1 + exp(-XB));
-    float y = res(i);
-    float logitDelta = y - m * w;
-
-    nllAvg = (1-nllWt) * nllAvg + nllWt * (m * log(1 + exp(XB)) - y*XB);
-    objTracker(cc) = -nllAvg;
-    
-    // updating the intercept here
-    delta = logitDelta;
-    g0squared += delta*delta;
-    alpha += (masterStepSize/sqrt(g0squared))*delta;
-
-    // Inner loop to update the betas!
-    for(BetaVec::InnerIterator it(Xsamp); it; ++it)
+    // The big loop to train!!
+    for(int i = 0; i < nSamp; i++)
     {
+      bigcount=bigcount+1;
+      p.update(bigcount);
       
-      // cout << 2 << endl;
+      BetaVec Xsamp =Xtrain.row(i);
+      float XB = alpha + Xsamp.dot(Beta);
+      float w = 1 / (1 + exp(-XB));
+      float y = res(i);
+      float logitDelta = y - m * w;
       
-      // the first non-zero feature!
-      int j = it.index();
+      nllAvg = (1-nllWt) * nllAvg + nllWt * (m * log(1 + exp(XB)) - y*XB);
+      objTracker(cc) = nllAvg;
       
-      // weighting for penalty
-      weight = 1.0/(1.0 + fabs(Beta(j)));
-
-      /* Updating beta is done in two steps
-      ###########################################
+      // updating the intercept here
+      delta = logitDelta;
+      g0squared += delta*delta;
+      alpha += (masterStepSize/sqrt(g0squared))*delta;
+      
+      // Inner loop to update the betas!
+      for(BetaVec::InnerIterator it(Xsamp); it; ++it)
+      {
+        
+        // the first non-zero feature!
+        int j = it.index();
+        
+        // weighting for penalty
+        weight = 1.0/(1.0 + fabs(Beta(j)));
+        
+        /* Updating beta is done in two steps
+        ###########################################
         1. Lazy update the penalty portion only
         2. Gradient descent update 
-      ###########################################
-      */
-      
-      // STEP 1: Penalty only updates via *lazy updating*
-      float skip = cc - lastUpdate[j];
-      float h = invSqrt(Gsquared(j));
-      float gammatilde = skip*masterStepSize*h;
-      Beta(j) = sgn(Beta(j))*fmax(0.0, fabs(Beta(j)) - gammatilde*weight*lambda);
-      
-      lastUpdate[j] = cc;
-      
-      // STEP 2: Gradient descent update
-      // Calculate gradient(j), this element of the gradient
-      float elem_gradient = -logitDelta * it.value();
-
-      // Update weights for Adagrad scaling
-      Gsquared(j) += elem_gradient * elem_gradient;
-
-      // Calculate the scaling factor using fast-inverse-square-root
-      h = invSqrt(Gsquared(j));
-      gammatilde = masterStepSize*h;
-      mu = Beta(j) - gammatilde*elem_gradient;
-      Beta(j) = sgn(mu)*fmax(0.0, fabs(mu) - gammatilde*weight*lambda);
-    }
-    cc++; // the global counter
+        ###########################################
+        */
+        
+        // STEP 1: Penalty only updates via *lazy updating*
+        float skip = cc - lastUpdate[j];
+        float h = invSqrt(Gsquared(j));
+        float gammatilde = skip*masterStepSize*h;
+        Beta(j) = sgn(Beta(j))*fmax(0.0, fabs(Beta(j)) - gammatilde*weight*lambda);
+        
+        lastUpdate[j] = cc;
+        
+        // STEP 2: Gradient descent update
+        // Calculate gradient(j), this element of the gradient
+        float elem_gradient = -logitDelta * it.value();
+        
+        // Update weights for Adagrad scaling
+        Gsquared(j) += elem_gradient * elem_gradient;
+        
+        // Calculate the scaling factor using fast-inverse-square-root
+        h = invSqrt(Gsquared(j));
+        gammatilde = masterStepSize*h;
+        mu = Beta(j) - gammatilde*elem_gradient;
+        Beta(j) = sgn(mu)*fmax(0.0, fabs(mu) - gammatilde*weight*lambda);
+      }
+      cc++; // the global counter
+    }  
   }
-
+  
+  
   // Apply any ridge-regression penalties that we have not yet evaluated
   for(int j = 0; j < nPred; j++)
   {
@@ -154,7 +165,7 @@ List davesgdCV(VectorXf res, SparseMatrix<float,RowMajor,int> X, VectorXf B0, fl
     BetaVec Xsamp = Xtest.row(i);
     float XB = alpha + Xsamp.dot(Beta);
     float w = 1 / (1 + exp(-XB));
-    float y = res(i);
+    float y = res(i+train);
     
     if(w < 0.5)
     {
@@ -173,7 +184,8 @@ List davesgdCV(VectorXf res, SparseMatrix<float,RowMajor,int> X, VectorXf B0, fl
   float classrate = 1 - (tally/nSamptest);
   float sensi = (tally2/num1s); 
   float speci = (tally3/num0s); 
-  return List::create(Named("Likelihood") = objTracker,Named("Classrate") = classrate,Named("Sensitivity") = sensi,Named("Specificity") = speci);
+  // return List::create(Named("Likelihood") = objTracker,Named("Classrate") = classrate,Named("Sensitivity") = sensi,Named("Specificity") = speci,Named("alpha")=alpha);
+  return List::create(Named("Classrate") = classrate,Named("Sensitivity") = sensi,Named("Specificity") = speci,Named("alpha")=alpha);
 }
 
 
