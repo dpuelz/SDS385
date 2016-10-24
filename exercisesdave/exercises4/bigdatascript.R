@@ -18,7 +18,8 @@ library(spam)
 
 source('bigdatafunctions.R')
 sourceCpp('bigdatafunctions.cpp')
-sourceCpp('sgdlogit_james.cpp')
+# sourceCpp('sgdlogit_james.cpp')
+sourceCpp('JenniferCpp.cpp')
 
 # read in da big data
 X=readRDS('url_X.rds')
