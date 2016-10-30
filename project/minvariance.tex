@@ -1,0 +1,209 @@
+\RequirePackage{etoolbox}
+\csdef{input@path}{%
+ {sty/}% cls, sty files
+ {img/}% eps files
+}%
+\csgdef{bibdir}{bib/}% bst, bib files
+
+\documentclass[ba]{imsart}
+%
+%\pubyear{0000}
+%\volume{00}
+%\issue{0}
+%\doi{0000}
+%\firstpage{1}
+%\lastpage{1}
+
+
+%
+\usepackage{amsthm}
+\usepackage{amsmath}
+\usepackage{natbib}
+\usepackage[colorlinks,citecolor=blue,urlcolor=blue,filecolor=blue,backref=page]{hyperref}
+\usepackage{graphicx}
+\RequirePackage[OT1]{fontenc}
+\RequirePackage{amsthm,amsmath}
+\RequirePackage{natbib}
+%\RequirePackage[colorlinks,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage[utf8]{inputenc}
+\usepackage{natbib}
+\usepackage{amsthm}
+\usepackage{amsfonts}
+\usepackage{mathtools}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{pgfplotstable}
+\usepackage{booktabs}
+\usepackage{colortbl}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{tabu}
+\usepackage{rotating}
+\usepackage{lscape}
+\usepackage{afterpage}
+\usepackage{multirow}
+%\usepackage{subfig}
+\usepackage{subfigure}
+\usepackage{listings}
+\usepackage{color}
+\usepackage{dsfont}
+\usepackage{pdflscape}
+\usepackage[left=4.5cm,right=4.5cm,top=2.5cm,bottom=2.5cm,footnotesep=0.5cm]{geometry}
+%\usepackage[nomarkers,figuresonly]{endfloat}
+
+
+
+\newcommand\mat[1]{\mathcal{#1}}
+\newcommand\norm[1]{\left\lVert#1\right\rVert}
+\renewcommand{\familydefault}{\rmdefault}
+
+
+
+
+
+\startlocaldefs
+% ** Local definitions **
+\endlocaldefs
+
+
+\begin{document}
+
+\begin{frontmatter}
+\title{High frequency min-variance portfolios}
+
+\runtitle{High frequency min-variance portfolios}
+%\thankstext{T1}{Footnote to the title with the ``thankstext'' command.}
+
+\begin{aug}
+\author{\fnms{Jared} \snm{Fisher}\ead[label=e1]{jared.fisher@utexas.edu}}
+\and
+\author{\fnms{David} \snm{Puelz}
+\ead[label=e2]{david.puelz@utexas.edu}}
+\runauthor{Fisher and Puelz}
+
+\affiliation{The University of Texas}
+
+\address{Jared Fisher\\
+\printead{e1}\\}
+
+\address{David Puelz\\
+\printead{e2}\\}
+
+\end{aug}
+%
+\begin{abstract}
+We construct minimum-variance portfolios using high-frequency realized variance matrices. Our contributions are two-fold. First, we provide an approach for filling in missing data into realized variance matrices.  Second, we derive a penalized minimum variance loss function and ADMM procedure for calculating optimal portfolio weights.
+\end{abstract}
+
+%\begin{keyword}[class=MSC]
+%\kwd[Primary ]{60K35}
+%\kwd{60K35}
+%\kwd[; secondary ]{60K35}
+%\end{keyword}
+%
+%\begin{keyword}
+%\kwd{sample}
+%\kwd{\LaTeXe}
+%\end{keyword}
+
+\end{frontmatter}
+
+\section{Derivation}
+In this section, we consider a scenario where some covariates are known, or fixed, and the remainder are random.   This may occur when when one would like to condition on a particular value of a covariate at some fixed future value.
+     
+ Let the covariates $X$ be divided into two pieces, those that are considered random: $X_{r} \in \mathbb{R}^{p_{r}}$, and those that are considered fixed: $X_{f} \in \mathbb{R}^{p_{f}}$, so that the column vector $X = [X_{r}^{T} \hspace{1mm} X_{f}^{T}]^{T} \in \mathbb{R}^{p}$ and $p = p_{r} + p_{f}$.  So, future values of the covariates are given by $\tilde{X} = [\tilde{X}_{r}^{T} \hspace{1mm} X_{f}^{T}]^{T}$.
+
+Conditioning on the fixed covariates, the distribution of unknowns is: $p(\tilde{Y}, \tilde{X}_{r}, \Theta \vert X_{f})$ where $\Theta$ is a vector of parameters from a specified model.  If we assume conditional independence, then we can write: 
+\begin{equation}
+	\begin{split}
+		p(\tilde{Y}, \tilde{X}_{r}, \Theta \vert X_{f}) = p(\tilde{Y} \vert \tilde{X}_{r}, X_{f}, \Theta)p(\tilde{X}_{r} \vert X_{f}, \Theta)p(\Theta \vert X_{f})	.	
+	\end{split}
+\end{equation}where, as before, $p(\Theta \vert X_{f})$ is the posterior distribution of model parameters conditional on the fixed covariates.  Any models may be chosen for the conditional $Y \vert X_{r}, X_{f}$ and the marginal $X_{r} \vert X_{f}$.  For example, in the case of $X$ following a multivariate normal distribution implied by a latent factor regression model, we automatically know the conditionals including $X_{r} \vert X_{f}$. 
+
+We use the negative log-density of the regression of $p(Y\vert X)$ as the utility function with an $l_{0}$ penalty:
+
+\begin{equation}
+	\begin{split}
+		\mathcal{L}_{\lambda}(\tilde{Y},\tilde{X},\Theta,\boldsymbol{\gamma}) \equiv \frac{1}{2}( \tilde{Y} - \boldsymbol{\gamma}\tilde{X} )^{T} \Omega ( \tilde{Y} - \boldsymbol{\gamma}\tilde{X} )  + \lambda \norm{\text{{\bf vec}}(\boldsymbol{\gamma})}_{0}, \label{newloss}
+	\end{split}
+\end{equation}
+Define the following block structure for the action, $\boldsymbol{\gamma}$:
+
+\begin{equation}
+	\begin{split}
+		\boldsymbol{\gamma} = \begin{bmatrix}
+			\boldsymbol{\gamma}_{r} & \boldsymbol{\gamma}_{f} \\ 
+		\end{bmatrix},
+	\end{split}
+\end{equation}so that $\boldsymbol{\gamma}_{r} \in \mathbb{R}^{q \times p_{r}}$ and $\boldsymbol{\gamma}_{f} \in \mathbb{R}^{q \times p_{f}}$.  We expand out \ref{newloss} and drop terms that don't involve the action $\boldsymbol{\gamma}$:
+
+{\small
+\begin{equation}\label{modnew1}
+	\begin{split}
+%		\mathcal{L}_{\lambda}(\tilde{Y},\tilde{X}, \Theta, \boldsymbol{\gamma}) &= \frac{1}{2}\left(\tilde{Y}^{T} \Omega \tilde{Y} - 2\tilde{X}_{r}^{T}\boldsymbol{\gamma}_{r}^{T} \Omega \tilde{Y} - 2 X_{f}^{T}\boldsymbol{\gamma}_{f}^{T} \Omega \tilde{Y} + \tilde{X}_{r}^{T}\boldsymbol{\gamma}_{r}^{T}  \Omega \boldsymbol{\gamma}_{r} \tilde{X}_{r} + X_{f}^{T}\boldsymbol{\gamma}_{f}^{T}  \Omega \boldsymbol{\gamma}_{f} X_{f}\right) 
+%		\\
+%		\hspace{10mm} + \lambda \norm{\text{{\bf vec}}(\boldsymbol{\gamma})}_{0} 
+%		 \\
+		\mathcal{L}_{\lambda}(\tilde{Y},\tilde{X}, \Theta, \boldsymbol{\gamma}) = \frac{1}{2}\left(\tilde{X}_{r}^{T}\boldsymbol{\gamma}_{r}^{T}  \Omega \boldsymbol{\gamma}_{r} \tilde{X}_{r} + X_{f}^{T}\boldsymbol{\gamma}_{f}^{T}  \Omega \boldsymbol{\gamma}_{f} X_{f} - 2\tilde{X}_{r}^{T}\boldsymbol{\gamma}_{r}^{T} \Omega \tilde{Y} - 2 X_{f}^{T}\boldsymbol{\gamma}_{f}^{T} \Omega \tilde{Y}\right) &+ \lambda \norm{\text{{\bf vec}}(\boldsymbol{\gamma})}_{0}
+		\\
+		 &+ \text{constant}. 
+		\end{split}
+\end{equation}}Taking expectations over $p(\tilde{Y}, \tilde{X}_{r}, \Theta \vert X_{f})$ and dropping the one-half and constant, we obtain the integrated loss function:
+
+{\small
+\begin{equation}\label{modnew2}
+	\begin{split}
+%		\mathcal{L}_{\lambda}(\boldsymbol{\gamma}) =
+%		\mathbb{E}\left[\text{tr}[\boldsymbol{\gamma}_{r}^{T}  \Omega \boldsymbol{\gamma}_{r} \tilde{X}_{r}\tilde{X}_{r}^{T}]\right]+ \mathbb{E}\left[\text{tr}[\boldsymbol{\gamma}_{f}^{T}  \Omega \boldsymbol{\gamma}_{f} X_{f}X_{f}^{T}]\right]  - 2\mathbb{E}\left[\text{tr}[\boldsymbol{\gamma}_{r}^{T} \Omega \tilde{Y}\tilde{X}_{r}^{T}]\right] - 2\mathbb{E}\left[\text{tr}[\boldsymbol{\gamma}_{f}^{T} \Omega \tilde{Y}X_{f}^{T}]\right] 
+%		\\
+%		+ \lambda \norm{\text{{\bf vec}}(\boldsymbol{\gamma})}_{0}.
+%		\\
+				\mathcal{L}_{\lambda}(\boldsymbol{\gamma}) =
+		\mathbb{E}\left[\text{tr}[\boldsymbol{\gamma}_{r}^{T}  \Omega \boldsymbol{\gamma}_{r} \tilde{X}_{r}\tilde{X}_{r}^{T}]\right]  - 2\mathbb{E}\left[\text{tr}[\boldsymbol{\gamma}_{r}^{T} \Omega \tilde{Y}\tilde{X}_{r}^{T}]\right] + \mathbb{E}\left[\text{tr}[\boldsymbol{\gamma}_{f}^{T}  \Omega \boldsymbol{\gamma}_{f} X_{f}X_{f}^{T}]\right] - 2\mathbb{E}\left[\text{tr}[\boldsymbol{\gamma}_{f}^{T} \Omega \tilde{Y}X_{f}^{T}]\right] 
+		\\
+		+ \lambda \norm{\text{{\bf vec}}(\boldsymbol{\gamma})}_{0}.  
+		\end{split}
+\end{equation}}We simplify the expectations in a similar way to our derivation of the original loss function presented in section 2.
+
+\begin{equation}
+	\begin{split}
+		\mathcal{L}_{\lambda}(\boldsymbol{\gamma}) = \text{tr}[M\boldsymbol{\gamma}_{r}S_{r}\boldsymbol{\gamma}_{r}^{T}] - 2\text{tr}[A_{r}\boldsymbol{\gamma}_{r}^{T}] + \text{tr}[M\boldsymbol{\gamma}_{f}S_{f}\boldsymbol{\gamma}_{f}^{T}] - 2\text{tr}[A_{f}\boldsymbol{\gamma}_{f}^{T}] + \lambda \norm{\text{{\bf vec}}(\boldsymbol{\gamma})}_{0},	
+	\end{split}
+\end{equation}where,
+
+\begin{equation}
+	\begin{split}
+		A_{r} &\equiv \mathbb{E}[\Omega\tilde{Y}\tilde{X}_{r}^{T}], \hspace{2mm} A_{f} \equiv \mathbb{E}[\Omega\tilde{Y}\tilde{X}_{f}^{T}]
+		\\
+		S_{r} &\equiv \mathbb{E}[\tilde{X}_{r}\tilde{X}_{r}^{T}], \hspace{3.5mm} S_{f} = X_{f}X_{f}^{T}
+		\\
+		M &\equiv \overline{\Omega}
+	\end{split}
+\end{equation} 
+
+Combining the matrix traces, we simplify the loss function as follows:
+
+\begin{equation}
+	\begin{split}
+		\mathcal{L}_{\lambda}(\boldsymbol{\gamma}) &= \text{tr}[ M \boldsymbol{\gamma} S \boldsymbol{\gamma}^{T} ] - 2\text{tr}[A\boldsymbol{\gamma}^{T}]  + \lambda \norm{\text{{\bf vec}}(\boldsymbol{\gamma})}_{0},
+	\end{split}
+\end{equation}where,
+
+\begin{equation}
+	\begin{split}
+	 	S \equiv \begin{bmatrix}
+	 		S_{r} & 0
+	 		\\
+	 		0 & S_{f}
+	 		\end{bmatrix}, \hspace{2mm} 
+	 	A \equiv \begin{bmatrix}
+	 		A_{r} \\
+	 		A_{f}
+	 	\end{bmatrix}.
+	\end{split} \label{finalfr}
+\end{equation}Then, we proceed exactly as in the appendix to derive the lasso form of loss function \ref{finalfr}.
+
+\end{document}
+

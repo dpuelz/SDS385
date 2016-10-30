@@ -1,0 +1,4 @@
+\select@language {english}
+\contentsline {section}{\numberline {1}Comments on code}{2}
+\contentsline {section}{\numberline {2}Cross-validation exercise}{2}
+\contentsline {subsection}{\numberline {2.1}Comparing the solution paths}{6}
