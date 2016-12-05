@@ -10,6 +10,6 @@ Welcome to the project folder of David and Jared’s realized covariance work!
 
 ## Raw High Frequency and Returns Data / Data pre-processing code
 
-Unfortunately, this raw data obtained from CRSP and the Trade-and-Quote database is proprietary.  The pre-processing R code and scripts are also proprietary. Please contact either of us if you wish to obtain the code and/or data. Our emails are david.puelz@utexas.edu and jared.fisher@utexas.edu.
+Unfortunately, the raw data obtained from CRSP and the Trade-and-Quote database is proprietary.  The pre-processing R code and scripts are also proprietary. Please contact either of us if you wish to obtain the code and/or data. Our emails are david.puelz@utexas.edu and jared.fisher@utexas.edu.
 
 
